@@ -24,7 +24,7 @@ class FatigueExcelReportGenerator {
       this.addDetailEventsSheet(workbook);
       this.addStatisticsSheet(workbook);
       this.addAnalysisSheet(workbook);
-      this.addRecommendationsSheet(workbook);
+      await this.addRecommendationsSheet(workbook);
       
       // 下载Excel文件
       const fileName = `疲劳报告_${user.username}_${new Date().toISOString().split('T')[0]}.xlsx`;
@@ -462,16 +462,16 @@ class FatigueExcelReportGenerator {
   }
 
   // 添加建议措施工作表
-  addRecommendationsSheet(workbook) {
+  async addRecommendationsSheet(workbook) {
     const data = [
       ['改进建议与措施'],
       [''],
-      ['序号', '建议内容']
+      ['序号', '建议内容', '建议来源']
     ];
 
-    const recommendations = this.generateRecommendations();
+    const recommendations = await this.generateRecommendations();
     recommendations.forEach((rec, index) => {
-      data.push([index + 1, rec]);
+      data.push([index + 1, rec.content, rec.source]);
     });
 
     const worksheet = XLSX.utils.aoa_to_sheet(data);
@@ -479,18 +479,62 @@ class FatigueExcelReportGenerator {
     // 设置列宽
     worksheet['!cols'] = [
       { width: 8 },
-      { width: 80 }
+      { width: 70 },
+      { width: 15 }
     ];
 
     XLSX.utils.book_append_sheet(workbook, worksheet, '改进建议');
   }
 
-  // 生成智能建议
-  generateRecommendations() {
+  // 生成智能建议（支持AI）
+  async generateRecommendations() {
+    const recommendations = [];
+
+    try {
+      // 使用星火认知大模型生成建议
+      if (window.aiFatigueAdvisor) {
+        console.log('🤖 正在调用星火认知大模型生成个性化建议...');
+        const aiRecommendations = await window.aiFatigueAdvisor.generatePersonalRecommendations(
+          this.reportData,
+          this.user
+        );
+
+        // 将AI建议添加到列表
+        aiRecommendations.forEach(rec => {
+          recommendations.push({
+            content: rec,
+            source: '星火AI分析'
+          });
+        });
+
+        console.log(`✅ 星火AI生成了 ${aiRecommendations.length} 条个性化建议`);
+
+        // 如果AI建议充足，直接返回
+        if (recommendations.length >= 5) {
+          return recommendations;
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ 星火AI建议生成失败，使用传统建议:', error.message);
+    }
+
+    // AI建议不足时，补充传统建议
+    const traditionalRecommendations = this.generateTraditionalRecommendations();
+    traditionalRecommendations.forEach(rec => {
+      recommendations.push({
+        content: rec,
+        source: '规则分析'
+      });
+    });
+
+    return recommendations;
+  }
+
+  // 生成传统规则建议
+  generateTraditionalRecommendations() {
     const stats = this.reportData.stats;
     const risk = this.reportData.riskAssessment;
     const timeAnalysis = this.reportData.timeAnalysis;
-    const typeStats = this.reportData.typeStats;
     const recommendations = [];
 
     // 基于风险等级的建议
@@ -507,7 +551,6 @@ class FatigueExcelReportGenerator {
     // 基于事件总数的建议
     if (stats.totalEvents > 20) {
       recommendations.push('疲劳事件频发，建议进行全面体检，排查潜在健康问题');
-      recommendations.push('调整饮食结构，避免油腻食物，多食用清淡易消化食品');
     } else if (stats.totalEvents > 10) {
       recommendations.push('适当增加休息频率，避免疲劳驾驶');
     }
@@ -515,52 +558,22 @@ class FatigueExcelReportGenerator {
     // 基于高危事件的建议
     if (stats.highSeverityEvents > 5) {
       recommendations.push('高危疲劳事件过多，必须立即改善睡眠质量');
-      recommendations.push('考虑更换驾驶班次，避开个人疲劳高发时段');
-    }
-
-    // 基于平均持续时间的建议
-    if (stats.avgDuration > 25) {
-      recommendations.push('疲劳持续时间过长，建议缩短单次驾驶时间');
-      recommendations.push('学习疲劳自我识别技巧，及时发现疲劳征象');
     }
 
     // 基于时间分布的建议
     if (timeAnalysis.distribution.night > stats.totalEvents * 0.3) {
       recommendations.push('夜间疲劳事件过多，建议调整为白班驾驶');
-      recommendations.push('如必须夜间驾驶，应提前2-3小时进行充分休息');
-    }
-
-    if (timeAnalysis.distribution.afternoon > stats.totalEvents * 0.4) {
-      recommendations.push('下午疲劳高发，建议午餐后适当休息30分钟');
-      recommendations.push('下午驾驶时保持车内通风，适当降低温度');
-    }
-
-    // 基于疲劳类型的建议
-    const dominantType = Object.keys(typeStats).reduce((a, b) =>
-      typeStats[a] > typeStats[b] ? a : b, Object.keys(typeStats)[0]);
-
-    if (dominantType === '闭眼' && typeStats[dominantType] > stats.totalEvents * 0.3) {
-      recommendations.push('闭眼疲劳频繁，存在瞌睡风险，建议立即停车休息');
-      recommendations.push('检查睡眠质量，必要时使用提神饮品（适量咖啡等）');
-    } else if (dominantType === '点头' && typeStats[dominantType] > stats.totalEvents * 0.25) {
-      recommendations.push('点头疲劳突出，注意力不集中，建议调整座椅和驾驶姿势');
-      recommendations.push('增加车内互动，如听音乐、开窗通风等保持清醒');
-    } else if (dominantType === '分神' && typeStats[dominantType] > stats.totalEvents * 0.3) {
-      recommendations.push('分神现象严重，建议减少车内干扰因素');
-      recommendations.push('专注驾驶，避免使用手机或进行其他分散注意力的活动');
     }
 
     // 通用建议
-    if (recommendations.length === 0 || risk.riskLevel <= 2) {
+    if (recommendations.length === 0) {
       recommendations.push('整体疲劳状况良好，继续保持规律作息');
       recommendations.push('定期进行疲劳自测，预防疲劳驾驶');
-      recommendations.push('保持良好的驾驶习惯，确保行车安全');
     }
 
     // 预防性建议
     recommendations.push('建议安装疲劳驾驶预警设备，实时监控驾驶状态');
     recommendations.push('定期参加安全驾驶培训，提高安全意识');
-    recommendations.push('建立驾驶日志，记录疲劳状况和休息时间');
 
     return recommendations;
   }

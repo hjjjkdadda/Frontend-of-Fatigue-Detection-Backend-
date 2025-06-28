@@ -891,7 +891,7 @@ function addTrendAnalysisSheet(workbook, reportData) {
 }
 
 // 添加风险分析工作表
-function addRiskAnalysisSheet(workbook, reportData) {
+async function addRiskAnalysisSheet(workbook, reportData) {
   const data = [
     ['风险分析与建议'],
     [''],
@@ -921,19 +921,54 @@ function addRiskAnalysisSheet(workbook, reportData) {
 
   data.push(['']);
   data.push(['管理建议']);
-  data.push(['序号', '建议内容']);
+  data.push(['序号', '建议内容', '建议来源']);
 
-  const recommendations = [
-    '对高风险人员进行重点监控，增加休息频率',
-    '定期组织安全驾驶培训，提高驾驶员安全意识',
-    '建立疲劳驾驶预警机制，及时发现和处理疲劳状态',
-    '合理安排驾驶班次，避免长时间连续驾驶',
-    '加强驾驶员健康管理，定期进行体检',
-    '完善疲劳监测设备，提高监测精度和覆盖率'
-  ];
+  // 使用星火认知大模型生成建议
+  let recommendations = [];
+  try {
+    if (window.aiFatigueAdvisor) {
+      console.log('🤖 正在调用星火认知大模型生成总体管理建议...');
+      const aiRecommendations = await window.aiFatigueAdvisor.generateOverallRecommendations(reportData);
+      recommendations = aiRecommendations.map(rec => ({ content: rec, source: '星火AI分析' }));
+      console.log(`✅ 星火AI生成了 ${aiRecommendations.length} 条总体管理建议`);
+
+      // 如果AI建议充足，直接使用
+      if (recommendations.length >= 6) {
+        // AI建议已足够，继续使用
+      } else {
+        // AI建议不足，补充传统建议
+        const traditionalRecommendations = [
+          '对高风险人员进行重点监控，增加休息频率',
+          '定期组织安全驾驶培训，提高驾驶员安全意识',
+          '建立疲劳驾驶预警机制，及时发现和处理疲劳状态',
+          '合理安排驾驶班次，避免长时间连续驾驶',
+          '加强驾驶员健康管理，定期进行体检',
+          '完善疲劳监测设备，提高监测精度和覆盖率'
+        ];
+
+        traditionalRecommendations.forEach(rec => {
+          recommendations.push({ content: rec, source: '规则分析' });
+        });
+      }
+    }
+  } catch (error) {
+    console.warn('⚠️ 星火AI总体建议生成失败，使用传统建议:', error.message);
+
+    // AI失败时使用传统建议
+    const traditionalRecommendations = [
+      '对高风险人员进行重点监控，增加休息频率',
+      '定期组织安全驾驶培训，提高驾驶员安全意识',
+      '建立疲劳驾驶预警机制，及时发现和处理疲劳状态',
+      '合理安排驾驶班次，避免长时间连续驾驶',
+      '加强驾驶员健康管理，定期进行体检',
+      '完善疲劳监测设备，提高监测精度和覆盖率'
+    ];
+
+    recommendations = traditionalRecommendations.map(rec => ({ content: rec, source: '规则分析' }));
+  }
 
   recommendations.forEach((rec, index) => {
-    data.push([index + 1, rec]);
+    data.push([index + 1, rec.content, rec.source]);
   });
 
   const worksheet = XLSX.utils.aoa_to_sheet(data);
@@ -958,7 +993,7 @@ async function generateExcelAllReport(reportData) {
   addUserSummarySheet(workbook, reportData);
   addStatisticsSheet(workbook, reportData);
   addTrendAnalysisSheet(workbook, reportData);
-  addRiskAnalysisSheet(workbook, reportData);
+  await addRiskAnalysisSheet(workbook, reportData);
 
   const fileName = `总体疲劳报告_${reportData.reportDate}.xlsx`;
   XLSX.writeFile(workbook, fileName);
