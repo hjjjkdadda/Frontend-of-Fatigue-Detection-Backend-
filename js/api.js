@@ -110,9 +110,15 @@ class ApiService {
 
   // ==================== 用户管理API ====================
   
-  // 获取用户列表
+  // 获取用户列表（返回所有符合条件的数据，前端分页）
   async getUsers(params = {}) {
-    return this.get('/users', params);
+    // 只传递筛选参数，不传递分页参数
+    const filterParams = {};
+    if (params.role) filterParams.role = params.role;
+    if (params.status) filterParams.status = params.status;
+    if (params.search) filterParams.search = params.search;
+
+    return this.get('/users', filterParams);
   }
 
   // 获取单个用户详情
@@ -180,7 +186,7 @@ class ApiService {
   }
 
   // ==================== 用户详情API ====================
-  
+
   // 获取用户详细信息
   async getUserDetail(username) {
     return this.get(`/users/${username}/detail`);
@@ -201,6 +207,26 @@ class ApiService {
     return this.get(`/users/${username}/realtime-events`);
   }
 
+  // 获取用户视频历史记录
+  async getUserVideoHistory(username, params = {}) {
+    return this.get(`/users/${username}/video-history`, params);
+  }
+
+  // 获取用户健康数据
+  async getUserHealthData(username) {
+    return this.get(`/users/${username}/health`);
+  }
+
+  // 更新用户健康数据
+  async updateUserHealthData(username, healthData) {
+    return this.put(`/users/${username}/health`, healthData);
+  }
+
+  // 获取用户驾驶统计
+  async getUserDrivingStats(username, params = {}) {
+    return this.get(`/users/${username}/driving-stats`, params);
+  }
+
   // ==================== 系统日志API ====================
   
   // 获取系统日志
@@ -213,8 +239,99 @@ class ApiService {
     return this.post('/logs', logData);
   }
 
+  // ==================== 疲劳事件API ====================
+
+  // 添加疲劳事件
+  async addFatigueEvent(username, eventData) {
+    return this.post(`/users/${username}/fatigue-events`, eventData);
+  }
+
+  // 更新疲劳事件
+  async updateFatigueEvent(username, eventId, eventData) {
+    return this.put(`/users/${username}/fatigue-events/${eventId}`, eventData);
+  }
+
+  // 删除疲劳事件
+  async deleteFatigueEvent(username, eventId) {
+    return this.delete(`/users/${username}/fatigue-events/${eventId}`);
+  }
+
+  // 批量导入疲劳事件
+  async batchImportFatigueEvents(username, events) {
+    return this.post(`/users/${username}/fatigue-events/batch`, { events });
+  }
+
+  // ==================== 视频监控API ====================
+
+  // 获取视频监控列表
+  async getVideoMonitorList(params = {}) {
+    return this.get('/video/monitors', params);
+  }
+
+  // 开始视频监控
+  async startVideoMonitor(username) {
+    return this.post(`/video/monitors/${username}/start`);
+  }
+
+  // 停止视频监控
+  async stopVideoMonitor(username) {
+    return this.post(`/video/monitors/${username}/stop`);
+  }
+
+  // 获取视频监控状态
+  async getVideoMonitorStatus(username) {
+    return this.get(`/video/monitors/${username}/status`);
+  }
+
+  // 获取视频录像列表
+  async getVideoRecordings(username, params = {}) {
+    return this.get(`/video/recordings/${username}`, params);
+  }
+
+  // 删除视频录像
+  async deleteVideoRecording(username, recordingId) {
+    return this.delete(`/video/recordings/${username}/${recordingId}`);
+  }
+
+  // ==================== 设备管理API ====================
+
+  // 获取设备列表
+  async getDevices(params = {}) {
+    return this.get('/devices', params);
+  }
+
+  // 添加设备
+  async addDevice(deviceData) {
+    return this.post('/devices', deviceData);
+  }
+
+  // 更新设备
+  async updateDevice(deviceId, deviceData) {
+    return this.put(`/devices/${deviceId}`, deviceData);
+  }
+
+  // 删除设备
+  async deleteDevice(deviceId) {
+    return this.delete(`/devices/${deviceId}`);
+  }
+
+  // 获取设备状态
+  async getDeviceStatus(deviceId) {
+    return this.get(`/devices/${deviceId}/status`);
+  }
+
+  // 绑定设备到用户
+  async bindDeviceToUser(deviceId, username) {
+    return this.post(`/devices/${deviceId}/bind`, { username });
+  }
+
+  // 解绑设备
+  async unbindDevice(deviceId) {
+    return this.post(`/devices/${deviceId}/unbind`);
+  }
+
   // ==================== 统计报表API ====================
-  
+
   // 获取用户角色分布统计
   async getUserRoleStats() {
     return this.get('/stats/user-roles');
@@ -228,6 +345,155 @@ class ApiService {
   // 获取系统使用统计
   async getSystemUsageStats(params = {}) {
     return this.get('/stats/system-usage', params);
+  }
+
+  // 获取时间段统计
+  async getTimeRangeStats(params = {}) {
+    return this.get('/stats/time-range', params);
+  }
+
+  // 获取部门统计
+  async getDepartmentStats() {
+    return this.get('/stats/departments');
+  }
+
+  // 获取车辆统计
+  async getVehicleStats() {
+    return this.get('/stats/vehicles');
+  }
+
+  // ==================== 系统配置API ====================
+
+  // 获取系统配置
+  async getSystemConfig() {
+    return this.get('/config/system');
+  }
+
+  // 更新系统配置
+  async updateSystemConfig(config) {
+    return this.put('/config/system', config);
+  }
+
+  // 获取疲劳阈值配置
+  async getFatigueThresholds() {
+    return this.get('/config/fatigue-thresholds');
+  }
+
+  // 更新疲劳阈值配置
+  async updateFatigueThresholds(thresholds) {
+    return this.put('/config/fatigue-thresholds', thresholds);
+  }
+
+  // 获取告警配置
+  async getAlertConfig() {
+    return this.get('/config/alerts');
+  }
+
+  // 更新告警配置
+  async updateAlertConfig(config) {
+    return this.put('/config/alerts', config);
+  }
+
+  // ==================== 告警通知API ====================
+
+  // 获取告警列表
+  async getAlerts(params = {}) {
+    return this.get('/alerts', params);
+  }
+
+  // 添加告警
+  async addAlert(alertData) {
+    return this.post('/alerts', alertData);
+  }
+
+  // 更新告警状态
+  async updateAlertStatus(alertId, status) {
+    return this.put(`/alerts/${alertId}/status`, { status });
+  }
+
+  // 删除告警
+  async deleteAlert(alertId) {
+    return this.delete(`/alerts/${alertId}`);
+  }
+
+  // 批量处理告警
+  async batchProcessAlerts(alertIds, action) {
+    return this.post('/alerts/batch', { alertIds, action });
+  }
+
+  // ==================== 数据导入导出API ====================
+
+  // 导出用户数据
+  async exportUsers(format = 'excel', params = {}) {
+    return this.get('/export/users', { format, ...params });
+  }
+
+  // 导出疲劳事件数据
+  async exportFatigueEvents(format = 'excel', params = {}) {
+    return this.get('/export/fatigue-events', { format, ...params });
+  }
+
+  // 导出统计报表
+  async exportStats(reportType, format = 'excel', params = {}) {
+    return this.get(`/export/stats/${reportType}`, { format, ...params });
+  }
+
+  // 导入用户数据
+  async importUsers(file, options = {}) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('options', JSON.stringify(options));
+    return this.post('/import/users', formData, {
+      'Content-Type': 'multipart/form-data'
+    });
+  }
+
+  // 导入疲劳事件数据
+  async importFatigueEvents(file, options = {}) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('options', JSON.stringify(options));
+    return this.post('/import/fatigue-events', formData, {
+      'Content-Type': 'multipart/form-data'
+    });
+  }
+
+  // ==================== 实时数据API ====================
+
+  // 获取实时在线用户
+  async getRealtimeOnlineUsers() {
+    return this.get('/realtime/online-users');
+  }
+
+  // 获取实时疲劳事件
+  async getRealtimeFatigueEvents() {
+    return this.get('/realtime/fatigue-events');
+  }
+
+  // 获取实时系统状态
+  async getRealtimeSystemStatus() {
+    return this.get('/realtime/system-status');
+  }
+
+  // 订阅实时数据（WebSocket）
+  subscribeRealtimeData(callback) {
+    const wsUrl = this.baseURL.replace('http', 'ws') + '/ws/realtime';
+    const ws = new WebSocket(wsUrl);
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        callback(data);
+      } catch (error) {
+        console.error('WebSocket数据解析失败:', error);
+      }
+    };
+
+    ws.onerror = (error) => {
+      console.error('WebSocket连接错误:', error);
+    };
+
+    return ws;
   }
 }
 

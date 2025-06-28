@@ -107,31 +107,42 @@ let userIdToDelete = null;
 
 async function loadUsers() {
   try {
-    const users = await window.api.getUsers();
-    let filtered = users;
-    // 搜索
-    if (userFilter.search) {
+    console.log('🔄 正在从API加载用户数据...');
+
+    // 构建查询参数
+    const params = {};
+    if (userFilter.role) params.role = userFilter.role;
+    if (userFilter.search) params.search = userFilter.search;
+
+    // 从API获取所有符合条件的用户数据
+    const response = await window.apiService.getUsers(params);
+    const allUsers = response.data.users || [];
+
+    console.log(`✅ 获取到 ${allUsers.length} 个用户数据`);
+
+    // 前端进行搜索筛选（如果后端没有处理search参数）
+    let filtered = allUsers;
+    if (userFilter.search && !params.search) {
       filtered = filtered.filter(user =>
         user.username.includes(userFilter.search) || (user.phone && user.phone.includes(userFilter.search))
       );
     }
-    // 角色筛选
-    if (userFilter.role) {
-      filtered = filtered.filter(user => user.role === userFilter.role);
-    }
-    // 排序
+
+    // 前端排序
     if (userFilter.sort === 'username') {
       filtered = filtered.sort((a, b) => a.username.localeCompare(b.username));
     } else if (userFilter.sort === 'role') {
       filtered = filtered.sort((a, b) => a.role.localeCompare(b.role));
     }
-    // 分页
+
+    // 前端分页
     const total = filtered.length;
     const pageSize = userFilter.pageSize;
     const page = userFilter.page;
     const start = (page - 1) * pageSize;
     const end = start + pageSize;
     const pageUsers = filtered.slice(start, end);
+
     // 渲染用户列表
     const list = document.getElementById('userList');
     list.innerHTML = '';
@@ -144,10 +155,11 @@ async function loadUsers() {
         list.appendChild(userItem);
       });
     }
+
     // 渲染分页控件
     renderUserPagination(total, page, pageSize);
   } catch (error) {
-    console.error('加载用户列表失败:', error);
+    console.error('❌ 加载用户列表失败:', error);
     const list = document.getElementById('userList');
     list.innerHTML = '<div class="text-center text-danger py-4">加载用户列表失败，请刷新页面重试</div>';
   }

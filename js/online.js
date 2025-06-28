@@ -1,17 +1,45 @@
-// 管理员-在线用户面板逻辑（只展示静态allUsers数据，无加载中、无模拟刷新）
+// 管理员-在线用户面板逻辑
 (function(){
-  // 静态在线用户数据
-  const allUsers = [
-    {username:'driver1',role:'驾驶员',phone:'13800000001'},
-    {username:'driver2',role:'驾驶员',phone:'13800000002'},
-    {username:'monitor1',role:'监控人员',phone:'13800000003'},
-    {username:'admin',role:'管理员',phone:'13800000004'},
-    {username:'driver3',role:'驾驶员',phone:'13800000005'},
-    {username:'monitor2',role:'监控人员',phone:'13800000006'}
-  ];
+  // 在线用户数据
+  let allUsers = [];
   let filterRole = '';
   let searchName = '';
   let sortType = 'username';
+
+  // 加载在线用户数据
+  async function loadOnlineUsers() {
+    try {
+      console.log('🔄 正在从API加载在线用户数据...');
+
+      const response = await window.apiService.getOnlineUsers({
+        page: 1,
+        limit: 100
+      });
+
+      allUsers = response.data.onlineUsers || [];
+      console.log('✅ 在线用户数据加载成功:', allUsers);
+
+      // 更新显示
+      renderUserList();
+      updateStats();
+    } catch (error) {
+      console.warn('⚠️ API加载失败，使用模拟数据:', error);
+
+      // API失败时使用模拟数据
+      allUsers = [
+        {username:'driver1',role:'驾驶员',phone:'13800000001',status:'在线'},
+        {username:'driver2',role:'驾驶员',phone:'13800000002',status:'在线'},
+        {username:'monitor1',role:'监控人员',phone:'13800000003',status:'在线'},
+        {username:'admin',role:'管理员',phone:'13800000004',status:'在线'},
+        {username:'driver3',role:'驾驶员',phone:'13800000005',status:'在线'},
+        {username:'monitor2',role:'监控人员',phone:'13800000006',status:'在线'}
+      ];
+
+      console.log('使用模拟数据:', allUsers);
+      renderUserList();
+      updateStats();
+    }
+  }
 
   function renderUserList() {
     let users = allUsers.slice();
@@ -132,10 +160,11 @@
     const refreshBtn = document.getElementById('onlineRefreshBtn');
     if (refreshBtn) {
       refreshBtn.onclick = function() {
-        renderUserList();
+        loadOnlineUsers(); // 重新从API加载数据
       };
     }
-    renderUserList();
+    // 初始加载数据
+    loadOnlineUsers();
   };
 
   // 面板切换时自动加载

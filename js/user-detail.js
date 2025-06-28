@@ -37,12 +37,36 @@ class UserDetailPage {
 
   // 从API加载用户详情
   async loadUserDetail() {
-    // 暂时直接使用模拟数据，不进行API调用
-    this.user = this.generateMockUser();
-    this.enhanceUserData();
-    this.user.events = this.generateMockEvents();
+    try {
+      // 尝试从API获取用户详情
+      const userDetailResponse = await window.apiService.getUserDetail(this.username);
+      this.user = userDetailResponse.data.user;
 
-    console.log('使用模拟数据:', this.user);
+      // 获取用户疲劳事件历史
+      const eventsResponse = await window.apiService.getUserFatigueEvents(this.username, {
+        limit: 50,
+        startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() // 最近30天
+      });
+      this.user.events = eventsResponse.data.events;
+
+      // 获取用户健康数据
+      try {
+        const healthResponse = await window.apiService.getUserHealthData(this.username);
+        this.user.healthData = healthResponse.data.healthData;
+      } catch (error) {
+        console.warn('获取健康数据失败，使用默认数据:', error);
+        this.enhanceUserData(); // 使用模拟健康数据
+      }
+
+      console.log('✅ 从API加载用户数据成功:', this.user);
+    } catch (error) {
+      console.warn('⚠️ API加载失败，使用模拟数据:', error);
+      // API失败时使用模拟数据作为降级方案
+      this.user = this.generateMockUser();
+      this.enhanceUserData();
+      this.user.events = this.generateMockEvents();
+      console.log('使用模拟数据:', this.user);
+    }
   }
 
 
@@ -55,51 +79,21 @@ class UserDetailPage {
         phone: '138****5678',
         status: Math.random() > 0.3 ? '在线' : '离线',
         role: '驾驶员',
-        driverLicense: 'A1',
-        vehicleNumber: '京A12345',
-        department: '运输部',
-        joinDate: '2022-03-15',
-        totalDrivingHours: Math.floor(Math.random() * 3000) + 1000,
-        safetyScore: Math.floor(Math.random() * 30) + 70,
-        lastLoginTime: new Date().toISOString(),
-        age: Math.floor(Math.random() * 20) + 25,
-        experience: Math.floor(Math.random() * 15) + 3,
-        emergencyContact: '139****9876',
-        address: '北京市朝阳区建国路88号'
+        lastLoginTime: new Date().toISOString()
       },
       {
         username: this.username,
         phone: '139****8765',
         status: Math.random() > 0.2 ? '在线' : '离线',
         role: '驾驶员',
-        driverLicense: 'A2',
-        vehicleNumber: '京B67890',
-        department: '物流部',
-        joinDate: '2021-08-20',
-        totalDrivingHours: Math.floor(Math.random() * 4000) + 1500,
-        safetyScore: Math.floor(Math.random() * 25) + 75,
-        lastLoginTime: new Date().toISOString(),
-        age: Math.floor(Math.random() * 25) + 30,
-        experience: Math.floor(Math.random() * 20) + 5,
-        emergencyContact: '136****5432',
-        address: '北京市海淀区中关村大街123号'
+        lastLoginTime: new Date().toISOString()
       },
       {
         username: this.username,
         phone: '137****4321',
         status: Math.random() > 0.4 ? '在线' : '离线',
-        role: '驾驶员',
-        driverLicense: 'B2',
-        vehicleNumber: '京C54321',
-        department: '配送部',
-        joinDate: '2023-01-10',
-        totalDrivingHours: Math.floor(Math.random() * 2000) + 500,
-        safetyScore: Math.floor(Math.random() * 35) + 65,
-        lastLoginTime: new Date().toISOString(),
-        age: Math.floor(Math.random() * 15) + 22,
-        experience: Math.floor(Math.random() * 10) + 1,
-        emergencyContact: '135****7890',
-        address: '北京市西城区西单大街456号'
+        role: '监控人员',
+        lastLoginTime: new Date().toISOString()
       }
     ];
 

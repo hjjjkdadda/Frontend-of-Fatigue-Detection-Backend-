@@ -120,6 +120,50 @@ function generateMockMonitorData() {
 
 let monitorData = generateMockMonitorData();
 
+// 加载监控数据
+async function loadMonitorData() {
+  try {
+    console.log('🔄 正在从API加载监控数据...');
+
+    // 从API获取监控仪表板数据
+    const dashboardResponse = await window.apiService.getMonitorDashboard();
+    monitorData = dashboardResponse.data;
+
+    // 获取用户监控列表
+    const userListResponse = await window.apiService.getUserMonitorList({
+      page: 1,
+      limit: 50
+    });
+    monitorData.users = userListResponse.data.users;
+
+    // 获取疲劳统计数据
+    const fatigueStatsResponse = await window.apiService.getFatigueStats();
+    monitorData.fatigueStats = fatigueStatsResponse.data;
+
+    // 获取疲劳趋势数据
+    const fatigueTrendResponse = await window.apiService.getFatigueTrend({
+      period: 'week'
+    });
+    monitorData.fatigueTrend = fatigueTrendResponse.data.trendData;
+    monitorData.fatigueTrendDate = fatigueTrendResponse.data.dates;
+
+    console.log('✅ API数据加载成功:', monitorData);
+
+    // 更新页面显示
+    renderDashboard();
+    renderUserMonitorList();
+  } catch (error) {
+    console.warn('⚠️ API加载失败，使用模拟数据:', error);
+    // API失败时使用模拟数据作为降级方案
+    monitorData = generateMockMonitorData();
+    console.log('使用模拟数据:', monitorData);
+
+    // 更新页面显示
+    renderDashboard();
+    renderUserMonitorList();
+  }
+}
+
 function showMonitorTab(tab) {
   document.getElementById('monitor-dashboard').style.display = tab === 'dashboard' ? '' : 'none';
   document.getElementById('monitor-user-monitor').style.display = tab === 'user-monitor' ? '' : 'none';
@@ -592,8 +636,13 @@ function goUserDetailPage(username) {
 }
 
 
-window.onload = function() {
+window.onload = async function() {
+  // 首先加载数据
+  await loadMonitorData();
+
+  // 显示默认标签页
   showMonitorTab('dashboard');
+
   // 注销按钮事件绑定
   let logoutBtn = document.getElementById('monitor-logout-btn');
   if (logoutBtn) logoutBtn.onclick = logoutMonitor;
