@@ -148,6 +148,11 @@ class ApiService {
     return this.get('/users/online', params);
   }
 
+  // 获取在线用户趋势数据
+  async getOnlineUsersTrend(params = {}) {
+    return this.get('/users/online/trend', params);
+  }
+
   // 获取在线用户统计
   async getOnlineStats() {
     return this.get('/users/online/stats');
@@ -508,9 +513,15 @@ class ApiService {
     return this.get('/export/logs', params);
   }
 
-  // 清除系统日志
-  async clearSystemLogs() {
-    return this.post('/logs/cleanup');
+  // 清除本地logs.json文件（通过Electron IPC实现）
+  async clearLocalLogs() {
+    // 这个方法在Electron环境中通过window.api.clearLocalLogs()调用
+    // 在非Electron环境中返回错误
+    if (typeof window.api !== 'undefined' && window.api.clearLocalLogs) {
+      return window.api.clearLocalLogs();
+    } else {
+      throw new Error('此功能仅在Electron环境中可用');
+    }
   }
 }
 
@@ -530,9 +541,21 @@ window.api = {
   updateUser: (username, user) => window.apiService.updateUser(username, user),
   deleteUser: (username) => window.apiService.deleteUser(username),
   
-  // 日志
-  getLogs: () => window.apiService.getLogs(),
-  addLog: (log) => window.apiService.addLog(log),
+  // 日志（保持原有兼容性）
+  getLogs: () => {
+    // 在Electron环境中直接使用window.api
+    if (typeof window.api !== 'undefined' && window.api.getLocalLogs) {
+      return window.api.getLocalLogs();
+    }
+    // 在Web环境中使用HTTP API
+    return window.apiService.getLogs();
+  },
+  addLog: (log) => {
+    if (typeof window.api !== 'undefined' && window.api.addLog) {
+      return window.api.addLog(log);
+    }
+    return window.apiService.addLog(log);
+  },
   
   // 导航（保持原有逻辑）
   navigate: (page) => {

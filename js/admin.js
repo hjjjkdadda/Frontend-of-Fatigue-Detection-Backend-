@@ -73,8 +73,22 @@ function createLogItem(log) {
   // 设置角色徽章
   const roleBadge = logItem.querySelector('.log-role-badge');
   if (log.role) {
-    roleBadge.textContent = getRoleText(log.role);
-    roleBadge.className = 'badge bg-secondary ms-2';
+    const roleText = getRoleText(log.role);
+    roleBadge.textContent = roleText;
+    roleBadge.className = 'badge ms-2';
+
+    // 设置角色对应的颜色样式（和在线用户界面保持一致）
+    if (roleText === '管理员') {
+      roleBadge.style.backgroundColor = '#1976d2';
+      roleBadge.style.color = '#fff';
+    } else if (roleText === '监控人员') {
+      roleBadge.style.backgroundColor = '#43a047';
+      roleBadge.style.color = '#fff';
+    } else if (roleText === '驾驶员') {
+      roleBadge.style.backgroundColor = '#fbc02d';
+      roleBadge.style.color = '#23272e';
+    }
+    roleBadge.style.fontWeight = 'bold';
   } else {
     roleBadge.style.display = 'none';
   }
@@ -217,7 +231,7 @@ if (deleteUserConfirmBtn) {
 }
 
 // 关闭删除确认弹窗
-window.closeDeleteUserModal = function() {
+function closeDeleteUserModal() {
   const deleteModal = document.getElementById('deleteUserModal');
   if (deleteModal) {
     // 使用Bootstrap Modal API来隐藏弹窗
@@ -226,7 +240,7 @@ window.closeDeleteUserModal = function() {
       modal.hide();
     }
   }
-};
+}
 
 async function actuallyDeleteUser(userId) {
   try {
@@ -251,17 +265,17 @@ window.confirmDeleteUser = function(username) {
   }
 };
 
-document.getElementById('showAddUser').onclick = function() {
+function openAddUserModal() {
   document.getElementById('addUserModal').style.display = 'flex';
   document.getElementById('modalUser').value = '';
   document.getElementById('modalPwd').value = '';
   document.getElementById('modalRole').value = 'admin';
   document.getElementById('modalPhone').value = '';
   document.getElementById('modalMsg').innerText = '';
-};
-window.closeAddUserModal = function() {
+}
+function closeAddUserModal() {
   document.getElementById('addUserModal').style.display = 'none';
-};
+}
 document.getElementById('addUserBtn').onclick = async function() {
   const username = document.getElementById('modalUser').value;
   const password = document.getElementById('modalPwd').value;
@@ -323,7 +337,7 @@ window.editUser = function(username) {
     };
   });
 };
-window.closeEditUserModal = function() {
+function closeEditUserModal() {
   document.getElementById('editUserModal').style.display = 'none';
 }
 
@@ -400,6 +414,8 @@ function formatLogDetail(detail) {
 // ================== 在线用户面板逻辑 ==================
 let onlineUsersData = [];
 
+let onlineTrendData = [];
+
 async function loadOnlineUsers() {
   try {
     console.log('🔄 正在从API加载在线用户数据...');
@@ -409,9 +425,36 @@ async function loadOnlineUsers() {
 
     console.log(`✅ 获取到 ${onlineUsersData.length} 个在线用户数据`);
     renderOnlineUserList();
+
+    // 同时加载趋势数据
+    await loadOnlineUsersTrend();
   } catch (error) {
     console.error('❌ 加载在线用户失败:', error);
     showNetworkError('在线用户数据');
+  }
+}
+
+async function loadOnlineUsersTrend() {
+  try {
+    console.log('🔄 正在从API加载在线用户趋势数据...');
+
+    const today = new Date().toISOString().split('T')[0];
+    const response = await window.apiService.getOnlineUsersTrend({
+      date: today,
+      interval: 'hour' // 按小时统计
+    });
+
+    onlineTrendData = response.data.trendData || [];
+
+    console.log(`✅ 获取到在线用户趋势数据:`, onlineTrendData);
+
+    // 重新渲染图表（如果在线用户数据已加载）
+    if (onlineUsersData.length > 0) {
+      renderOnlineCharts(onlineUsersData);
+    }
+  } catch (error) {
+    console.error('❌ 加载在线用户趋势失败:', error);
+    // 趋势数据加载失败时，仍然可以显示用户列表和饼图
   }
 }
 let onlineFilterRole = '';
@@ -506,20 +549,17 @@ function renderOnlineCharts(users) {
     });
   }
 
-  // 趋势图（根据筛选角色显示数据）
+  // 趋势图（使用后端返回的真实历史数据）
   const trendDom = document.getElementById('onlineTrendChart');
-  if (trendDom && window.echarts) {
+  if (trendDom && window.echarts && onlineTrendData.length > 0) {
     const trendChart = window.echarts.init(trendDom);
-    const hours = Array.from({length: 12}, (_, i) => `${8+i}:00`);
 
-    // 根据当前筛选角色生成趋势数据
-    let filteredUsers = users;
+    // 根据当前筛选角色设置图表标题和颜色
     let chartTitle = '今日在线人数趋势';
     let legendText = '所有角色';
     let lineColor = '#91cc75';
 
     if (onlineFilterRole) {
-      filteredUsers = users.filter(u => u.role === onlineFilterRole);
       chartTitle = `今日${onlineFilterRole}在线人数趋势`;
       legendText = onlineFilterRole;
       // 根据角色设置不同颜色
@@ -532,12 +572,19 @@ function renderOnlineCharts(users) {
       }
     }
 
-    const trendData = hours.map((_, i) => {
-      // 模拟一天中的在线人数变化，早上少，中午多，晚上逐渐减少
-      const baseCount = filteredUsers.length;
-      const variation = Math.sin((i / 12) * Math.PI) * 2;
-      return Math.max(1, Math.floor(baseCount + variation + Math.random() * 2 - 1));
-    });
+    // 从后端趋势数据中提取时间和数值
+    const timeLabels = onlineTrendData.map(item => item.time || item.hour);
+    let trendValues;
+
+    if (onlineFilterRole) {
+      // 如果有角色筛选，使用对应角色的数据
+      const roleKey = onlineFilterRole === '管理员' ? 'admin' :
+                     onlineFilterRole === '监控人员' ? 'monitor' : 'driver';
+      trendValues = onlineTrendData.map(item => item[roleKey] || 0);
+    } else {
+      // 没有筛选时，使用总数
+      trendValues = onlineTrendData.map(item => item.total || 0);
+    }
 
     trendChart.setOption({
       title: { text: chartTitle, left: 'center', top: 10, textStyle: { fontSize: 14 } },
@@ -554,20 +601,31 @@ function renderOnlineCharts(users) {
       },
       xAxis: {
         type: 'category',
-        data: hours,
+        data: timeLabels,
         axisLabel: { interval: 1 }
       },
       yAxis: { type: 'value', minInterval: 1 },
       series: [{
         name: legendText,
         type: 'line',
-        data: trendData,
+        data: trendValues,
         smooth: true,
         itemStyle: { color: lineColor },
         areaStyle: { color: hexToRgba(lineColor, 0.3) },
         symbol: 'circle',
         symbolSize: 6
       }]
+    });
+  } else if (trendDom && window.echarts) {
+    // 如果没有趋势数据，显示提示信息
+    const trendChart = window.echarts.init(trendDom);
+    trendChart.setOption({
+      title: {
+        text: '暂无趋势数据',
+        left: 'center',
+        top: 'middle',
+        textStyle: { fontSize: 14, color: '#999' }
+      }
     });
   }
 }
@@ -587,6 +645,8 @@ function initOnlinePanelUI() {
     roleSel.onchange = function() {
       onlineFilterRole = this.value;
       renderOnlineUserList();
+      // 角色筛选变化时，重新渲染图表以显示对应角色的趋势
+      renderOnlineCharts(onlineUsersData);
     };
   }
   // 排序
@@ -617,6 +677,9 @@ function initOnlinePanelUI() {
 }
 
 window.onloadOnlinePanel = function() {
+  // 加载在线用户数据
+  loadOnlineUsers();
+
   if (!window.echarts) {
     const script = document.createElement('script');
     script.src = './node_modules/echarts/dist/echarts.min.js';
@@ -657,8 +720,7 @@ window.addEventListener('DOMContentLoaded', function() {
 
 window.onload = function() {
   loadUsers();
-  loadOnlineUsers();
-  loadSystemLogs();
+  loadLocalLogs(); // 首次进入读取本地日志
   showPanel('users');
 };
 
@@ -687,125 +749,170 @@ function showNetworkError(dataType) {
 }
 
 // ================== 系统日志管理 ==================
-let systemLogs = [];
+let localLogs = [];
 
-async function loadSystemLogs() {
+// 首次加载：读取本地日志
+async function loadLocalLogs() {
   try {
-    console.log('🔄 正在从API加载系统日志...');
+    console.log('📖 正在读取本地日志文件...');
 
-    const response = await window.apiService.getSystemLogs();
-    systemLogs = response.data.logs || [];
+    if (typeof window.api !== 'undefined' && window.api.getLocalLogs) {
+      localLogs = await window.api.getLocalLogs();
+      console.log(`✅ 读取到 ${localLogs.length} 条本地日志`);
+    } else {
+      console.log('⚠️ Electron API不可用，使用空日志');
+      localLogs = [];
+    }
 
-    console.log(`✅ 获取到 ${systemLogs.length} 条系统日志`);
-    renderSystemLogs();
+    renderLocalLogs();
   } catch (error) {
-    console.error('❌ 加载系统日志失败:', error);
-    showNetworkError('系统日志');
+    console.error('❌ 读取本地日志失败:', error);
+    localLogs = [];
+    renderLocalLogs();
   }
 }
 
-function renderSystemLogs() {
+// 从后端刷新日志
+async function refreshLogsFromBackend() {
+  try {
+    console.log('🔄 正在从后端获取新日志...');
+
+    // 从后端API获取日志
+    const response = await window.apiService.getSystemLogs();
+    const backendLogs = response.data.logs || [];
+
+    console.log(`✅ 从后端获取到 ${backendLogs.length} 条日志`);
+
+    if (backendLogs.length > 0) {
+      // 保存新日志到本地
+      if (typeof window.api !== 'undefined' && window.api.saveLogsToLocal) {
+        const result = await window.api.saveLogsToLocal(backendLogs);
+
+        if (result.success) {
+          console.log(`💾 ${result.message}`);
+          // 重新读取本地日志
+          await loadLocalLogs();
+          alert(`成功从后端获取并保存了新日志，当前总计 ${result.totalLogs} 条日志`);
+        } else {
+          throw new Error(result.message);
+        }
+      } else {
+        // 如果不是Electron环境，直接显示后端日志
+        localLogs = backendLogs;
+        renderLocalLogs();
+        alert(`从后端获取到 ${backendLogs.length} 条日志`);
+      }
+    } else {
+      alert('后端没有新的日志数据');
+    }
+  } catch (error) {
+    console.error('❌ 从后端刷新日志失败:', error);
+    alert('从后端获取日志失败，请检查网络连接');
+  }
+}
+
+// 导出日志到本地
+async function exportLogsToLocal() {
+  try {
+    console.log('📥 正在导出日志到本地...');
+
+    if (localLogs.length === 0) {
+      alert('没有日志数据可以导出');
+      return;
+    }
+
+    // 从后端获取最新的完整日志数据
+    const response = await window.apiService.getSystemLogs();
+    const allLogs = response.data.logs || [];
+
+    if (allLogs.length === 0) {
+      alert('后端没有日志数据可以导出');
+      return;
+    }
+
+    // 保存到本地
+    if (typeof window.api !== 'undefined' && window.api.saveLogsToLocal) {
+      const result = await window.api.saveLogsToLocal(allLogs);
+
+      if (result.success) {
+        // 重新读取本地日志
+        await loadLocalLogs();
+        alert(`成功导出 ${allLogs.length} 条日志到本地logs.json文件`);
+      } else {
+        throw new Error(result.message);
+      }
+    } else {
+      // 在Web环境中，创建下载链接
+      const dataStr = JSON.stringify(allLogs, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'logs.json';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      alert(`成功下载 ${allLogs.length} 条日志到logs.json文件`);
+    }
+  } catch (error) {
+    console.error('❌ 导出日志失败:', error);
+    alert('导出日志失败，请稍后重试');
+  }
+}
+
+// 删除本地日志文件
+function deleteLocalLogs() {
+  const modal = new bootstrap.Modal(document.getElementById('deleteLogsModal'));
+  modal.show();
+}
+
+async function confirmDeleteLocalLogs() {
+  try {
+    console.log('🗑️ 正在删除本地日志文件...');
+
+    if (typeof window.api !== 'undefined' && window.api.deleteLocalLogsFile) {
+      const result = await window.api.deleteLocalLogsFile();
+
+      if (result.success) {
+        // 清空本地日志数组并重新渲染
+        localLogs = [];
+        renderLocalLogs();
+
+        // 关闭模态框
+        const modal = bootstrap.Modal.getInstance(document.getElementById('deleteLogsModal'));
+        modal.hide();
+
+        console.log('✅ 本地日志文件删除成功');
+        alert('本地日志文件已删除');
+      } else {
+        throw new Error(result.message || '删除失败');
+      }
+    } else {
+      alert('此功能仅在Electron环境中可用');
+    }
+  } catch (error) {
+    console.error('❌ 删除本地日志文件失败:', error);
+    alert('删除失败，请稍后重试');
+  }
+}
+
+// 渲染本地日志
+function renderLocalLogs() {
   const list = document.getElementById('logList');
   if (!list) return;
 
-  if (systemLogs.length === 0) {
-    list.innerHTML = '<div class="text-center text-muted py-4">暂无系统日志</div>';
+  if (localLogs.length === 0) {
+    list.innerHTML = '<div class="text-center text-muted py-4">暂无本地日志数据<br><small>点击"刷新"获取最新日志</small></div>';
     return;
   }
 
   list.innerHTML = '';
-  systemLogs.forEach(log => {
+  // 按时间倒序显示（最新的在前面）
+  const sortedLogs = [...localLogs].sort((a, b) => new Date(b.time) - new Date(a.time));
+
+  sortedLogs.forEach(log => {
     const logItem = createLogItem(log);
     list.appendChild(logItem);
   });
-}
-
-// 导出日志
-function exportLogs() {
-  // 设置默认日期为今天
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById('exportStartDate').value = today;
-  document.getElementById('exportEndDate').value = today;
-
-  // 显示导出模态框
-  const modal = new bootstrap.Modal(document.getElementById('exportLogsModal'));
-  modal.show();
-}
-
-async function confirmExportLogs() {
-  const startDate = document.getElementById('exportStartDate').value;
-  const endDate = document.getElementById('exportEndDate').value;
-  const logLevel = document.getElementById('exportLogLevel').value;
-
-  if (!startDate || !endDate) {
-    alert('请选择导出日期范围');
-    return;
-  }
-
-  try {
-    console.log('🔄 正在导出系统日志...');
-
-    const params = {
-      startDate,
-      endDate,
-      level: logLevel,
-      format: 'excel'
-    };
-
-    const response = await window.apiService.exportSystemLogs(params);
-
-    // 创建下载链接
-    const blob = new Blob([response.data], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `系统日志_${startDate}_${endDate}.xlsx`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-
-    // 关闭模态框
-    const modal = bootstrap.Modal.getInstance(document.getElementById('exportLogsModal'));
-    modal.hide();
-
-    console.log('✅ 系统日志导出成功');
-  } catch (error) {
-    console.error('❌ 导出系统日志失败:', error);
-    alert('导出失败，请稍后重试');
-  }
-}
-
-// 清除日志
-function clearLogs() {
-  const modal = new bootstrap.Modal(document.getElementById('clearLogsModal'));
-  modal.show();
-}
-
-async function confirmClearLogs() {
-  try {
-    console.log('🔄 正在清除系统日志...');
-
-    await window.apiService.clearSystemLogs();
-
-    // 重新加载日志
-    await loadSystemLogs();
-
-    // 关闭模态框
-    const modal = bootstrap.Modal.getInstance(document.getElementById('clearLogsModal'));
-    modal.hide();
-
-    console.log('✅ 系统日志清除成功');
-    alert('系统日志已清除');
-  } catch (error) {
-    console.error('❌ 清除系统日志失败:', error);
-    alert('清除失败，请稍后重试');
-  }
-}
-
-// 刷新日志
-function refreshLogs() {
-  loadSystemLogs();
 }

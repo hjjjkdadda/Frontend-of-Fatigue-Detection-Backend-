@@ -26,7 +26,6 @@
     <main class="admin-content flex-fill">
       <div id="panel-users">
         <h4 class="mb-4"><i class="fa fa-users"></i> 用户管理</h4>
-        <button id="showAddUser" class="btn btn-primary mb-3" style="width:100px;">添加用户</button>
         <div class="d-flex mb-3 align-items-center justify-content-between" style="gap:12px;">
           <div class="d-flex align-items-center" style="gap:12px;">
             <input id="userSearchInput" class="form-control form-control-sm" style="width:180px;" placeholder="搜索用户名/手机号" />
@@ -68,9 +67,12 @@
                 <select id="modalRole" class="form-select mb-2" style="width:220px;">
                   <option value="admin">管理员</option>
                   <option value="monitor">监控人员</option>
-                  <option value="driver">驾驶员</option>
                 </select>
                 <input id="modalPhone" class="form-control mb-2" placeholder="手机号" style="width:220px;" />
+                <div class="alert alert-info" style="width:220px;font-size:12px;padding:8px;">
+                  <i class="fa fa-info-circle"></i>
+                  <strong>说明：</strong>驾驶员用户通过移动端APP自动注册，无需在此手动添加。
+                </div>
                 <div id="modalMsg" style="color:#d32f2f;height:20px;"></div>
               </div>
               <div class="modal-footer">
@@ -91,7 +93,6 @@
                 <select id="editModalRole" class="form-select mb-2" style="width:220px;">
                   <option value="admin">管理员</option>
                   <option value="monitor">监控人员</option>
-                  <option value="driver">驾驶员</option>
                 </select>
                 <input id="editModalPhone" class="form-control mb-2" placeholder="手机号" style="width:220px;" />
                 <div id="editModalMsg" style="color:#d32f2f;height:20px;"></div>
@@ -169,14 +170,14 @@
         <!-- 日志操作控件 -->
         <div class="d-flex mb-3 align-items-center justify-content-between" style="gap:12px;">
           <div class="d-flex align-items-center" style="gap:12px;">
-            <button class="btn btn-sm btn-success" onclick="exportLogs()">
-              <i class="fa fa-download"></i> 导出日志
-            </button>
-            <button class="btn btn-sm btn-danger" onclick="clearLogs()">
-              <i class="fa fa-trash"></i> 清除日志
-            </button>
-            <button class="btn btn-sm btn-primary" onclick="refreshLogs()">
+            <button class="btn btn-sm btn-primary" onclick="refreshLogsFromBackend()">
               <i class="fa fa-refresh"></i> 刷新
+            </button>
+            <button class="btn btn-sm btn-success" onclick="exportLogsToLocal()">
+              <i class="fa fa-download"></i> 导出到本地
+            </button>
+            <button class="btn btn-sm btn-danger" onclick="deleteLocalLogs()">
+              <i class="fa fa-trash"></i> 删除本地日志
             </button>
           </div>
         </div>
@@ -194,61 +195,30 @@
       </div>
     </main>
   </div>
-  <!-- 导出日志模态框 -->
-  <div id="exportLogsModal" class="modal fade" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title"><i class="fa fa-download"></i> 导出系统日志</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <label for="exportStartDate" class="form-label">开始日期</label>
-            <input type="date" class="form-control" id="exportStartDate">
-          </div>
-          <div class="mb-3">
-            <label for="exportEndDate" class="form-label">结束日期</label>
-            <input type="date" class="form-control" id="exportEndDate">
-          </div>
-          <div class="mb-3">
-            <label for="exportLogLevel" class="form-label">日志级别</label>
-            <select class="form-select" id="exportLogLevel">
-              <option value="">全部级别</option>
-              <option value="info">信息</option>
-              <option value="warning">警告</option>
-              <option value="error">错误</option>
-            </select>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-success" onclick="confirmExportLogs()">
-            <i class="fa fa-download"></i> 导出
-          </button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- 清除日志确认模态框 -->
-  <div id="clearLogsModal" class="modal fade" tabindex="-1">
+
+  <!-- 删除本地日志确认模态框 -->
+  <div id="deleteLogsModal" class="modal fade" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title"><i class="fa fa-trash"></i> 确认清除日志</h5>
+          <h5 class="modal-title"><i class="fa fa-trash"></i> 确认删除本地日志文件</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <p style="font-size:1.1rem;">确定要清除所有系统日志吗？此操作不可恢复！</p>
+          <p style="font-size:1.1rem;">确定要删除本地logs.json文件吗？此操作不可恢复！</p>
           <div class="alert alert-warning">
             <i class="fa fa-exclamation-triangle"></i>
-            <strong>警告：</strong>清除后将无法查看历史操作记录。
+            <strong>说明：</strong>此操作只删除本地日志文件，不影响后端数据库中的日志记录。
+          </div>
+          <div class="alert alert-info">
+            <i class="fa fa-info-circle"></i>
+            <strong>提示：</strong>删除后可以通过"刷新"重新获取日志数据。
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-danger" onclick="confirmClearLogs()">
-            <i class="fa fa-trash"></i> 确认清除
+          <button type="button" class="btn btn-danger" onclick="confirmDeleteLocalLogs()">
+            <i class="fa fa-trash"></i> 删除本地日志
           </button>
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
         </div>
