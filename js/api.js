@@ -495,6 +495,23 @@ class ApiService {
 
     return ws;
   }
+
+  // ==================== 系统日志API ====================
+
+  // 获取系统日志
+  async getSystemLogs(params = {}) {
+    return this.get('/logs', params);
+  }
+
+  // 导出系统日志
+  async exportSystemLogs(params = {}) {
+    return this.get('/export/logs', params);
+  }
+
+  // 清除系统日志
+  async clearSystemLogs() {
+    return this.post('/logs/cleanup');
+  }
 }
 
 // 创建全局API实例

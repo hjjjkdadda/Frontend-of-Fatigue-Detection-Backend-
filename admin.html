@@ -41,6 +41,9 @@
               <option value="role">角色排序</option>
             </select>
             <button class="btn btn-sm btn-primary" id="userSearchBtn" style="width:60px;margin-top:unset">搜索</button>
+            <button class="btn btn-sm btn-success" onclick="openAddUserModal()" style="margin-top:unset;width: 100px;margin-left: 10px;">
+              <i class="fa fa-plus"></i> 添加用户
+            </button>
           </div>
           <!-- 右侧：每页显示条数选择框 -->
           <select id="userPageSizeSelect" class="form-select form-select-sm" style="width:100px;">
@@ -162,19 +165,97 @@
       </div>
       <div id="panel-logs" style="display:none;">
         <h4 class="mb-4"><i class="fa fa-list-alt"></i> 系统日志与状态</h4>
+
+        <!-- 日志操作控件 -->
+        <div class="d-flex mb-3 align-items-center justify-content-between" style="gap:12px;">
+          <div class="d-flex align-items-center" style="gap:12px;">
+            <button class="btn btn-sm btn-success" onclick="exportLogs()">
+              <i class="fa fa-download"></i> 导出日志
+            </button>
+            <button class="btn btn-sm btn-danger" onclick="clearLogs()">
+              <i class="fa fa-trash"></i> 清除日志
+            </button>
+            <button class="btn btn-sm btn-primary" onclick="refreshLogs()">
+              <i class="fa fa-refresh"></i> 刷新
+            </button>
+          </div>
+        </div>
+
         <div class="card">
           <div class="card-header">
             <h6 class="mb-0">系统操作日志</h6>
           </div>
           <div class="card-body p-0">
             <div class="scrollable-list" id="logList" style="max-height:500px;">
-              <div class="text-center text-muted py-4">加载中...</div>
+              <div class="text-center text-muted py-4">正在从后端加载日志数据...</div>
             </div>
           </div>
         </div>
       </div>
     </main>
   </div>
+  <!-- 导出日志模态框 -->
+  <div id="exportLogsModal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fa fa-download"></i> 导出系统日志</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="exportStartDate" class="form-label">开始日期</label>
+            <input type="date" class="form-control" id="exportStartDate">
+          </div>
+          <div class="mb-3">
+            <label for="exportEndDate" class="form-label">结束日期</label>
+            <input type="date" class="form-control" id="exportEndDate">
+          </div>
+          <div class="mb-3">
+            <label for="exportLogLevel" class="form-label">日志级别</label>
+            <select class="form-select" id="exportLogLevel">
+              <option value="">全部级别</option>
+              <option value="info">信息</option>
+              <option value="warning">警告</option>
+              <option value="error">错误</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-success" onclick="confirmExportLogs()">
+            <i class="fa fa-download"></i> 导出
+          </button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 清除日志确认模态框 -->
+  <div id="clearLogsModal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fa fa-trash"></i> 确认清除日志</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p style="font-size:1.1rem;">确定要清除所有系统日志吗？此操作不可恢复！</p>
+          <div class="alert alert-warning">
+            <i class="fa fa-exclamation-triangle"></i>
+            <strong>警告：</strong>清除后将无法查看历史操作记录。
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger" onclick="confirmClearLogs()">
+            <i class="fa fa-trash"></i> 确认清除
+          </button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="logoutModal" class="modal fade" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">

@@ -153,14 +153,8 @@ async function loadMonitorData() {
     renderDashboard();
     renderUserMonitorList();
   } catch (error) {
-    console.warn('⚠️ API加载失败，使用模拟数据:', error);
-    // API失败时使用模拟数据作为降级方案
-    monitorData = generateMockMonitorData();
-    console.log('使用模拟数据:', monitorData);
-
-    // 更新页面显示
-    renderDashboard();
-    renderUserMonitorList();
+    console.error('❌ API加载失败:', error);
+    showMonitorNetworkError();
   }
 }
 
@@ -1046,6 +1040,33 @@ async function generateExcelAllReport(reportData) {
 
   const fileName = `总体疲劳报告_${reportData.reportDate}.xlsx`;
   XLSX.writeFile(workbook, fileName);
+}
+
+// ================== 网络错误处理 ==================
+function showMonitorNetworkError() {
+  const errorHtml = `
+    <div class="alert alert-danger text-center">
+      <i class="fa fa-exclamation-triangle"></i>
+      <strong>网络错误</strong><br>
+      无法从后端加载监控数据，请检查网络连接或刷新页面重试。
+      <br><br>
+      <button class="btn btn-sm btn-primary" onclick="location.reload()">
+        <i class="fa fa-refresh"></i> 刷新页面
+      </button>
+    </div>
+  `;
+
+  // 显示错误信息到仪表板
+  const dashboardContent = document.querySelector('#panel-dashboard .row');
+  if (dashboardContent) {
+    dashboardContent.innerHTML = errorHtml;
+  }
+
+  // 显示错误信息到用户监控列表
+  const userMonitorList = document.getElementById('userMonitorList');
+  if (userMonitorList) {
+    userMonitorList.innerHTML = errorHtml;
+  }
 }
 
 

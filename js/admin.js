@@ -154,6 +154,7 @@ async function loadUsers() {
     renderUserPagination(total, page, pageSize);
   } catch (error) {
     console.error('❌ 加载用户列表失败:', error);
+    showNetworkError('用户数据');
     const list = document.getElementById('userList');
     list.innerHTML = '<div class="text-center text-danger py-4">加载用户列表失败，请刷新页面重试</div>';
   }
@@ -397,16 +398,22 @@ function formatLogDetail(detail) {
 }
 
 // ================== 在线用户面板逻辑 ==================
-const onlineUsersData = [
-  {username:'driver1',role:'驾驶员',phone:'13800000001',status:'在线',loginTime:'2024-01-15 09:30:00'},
-  {username:'driver2',role:'驾驶员',phone:'13800000002',status:'在线',loginTime:'2024-01-15 08:45:00'},
-  {username:'monitor1',role:'监控人员',phone:'13800000003',status:'在线',loginTime:'2024-01-15 07:20:00'},
-  {username:'admin',role:'管理员',phone:'13800000004',status:'在线',loginTime:'2024-01-15 06:00:00'},
-  {username:'driver3',role:'驾驶员',phone:'13800000005',status:'在线',loginTime:'2024-01-15 10:15:00'},
-  {username:'monitor2',role:'监控人员',phone:'13800000006',status:'在线',loginTime:'2024-01-15 09:00:00'},
-  {username:'driver4',role:'驾驶员',phone:'13800000007',status:'在线',loginTime:'2024-01-15 11:30:00'},
-  {username:'supervisor1',role:'管理员',phone:'13800000008',status:'在线',loginTime:'2024-01-15 08:00:00'}
-];
+let onlineUsersData = [];
+
+async function loadOnlineUsers() {
+  try {
+    console.log('🔄 正在从API加载在线用户数据...');
+
+    const response = await window.apiService.getOnlineUsers();
+    onlineUsersData = response.data.onlineUsers || [];
+
+    console.log(`✅ 获取到 ${onlineUsersData.length} 个在线用户数据`);
+    renderOnlineUserList();
+  } catch (error) {
+    console.error('❌ 加载在线用户失败:', error);
+    showNetworkError('在线用户数据');
+  }
+}
 let onlineFilterRole = '';
 let onlineSearchName = '';
 let onlineSortType = 'username';
@@ -650,5 +657,155 @@ window.addEventListener('DOMContentLoaded', function() {
 
 window.onload = function() {
   loadUsers();
+  loadOnlineUsers();
+  loadSystemLogs();
   showPanel('users');
 };
+
+// ================== 网络错误处理 ==================
+function showNetworkError(dataType) {
+  const errorHtml = `
+    <div class="alert alert-danger text-center">
+      <i class="fa fa-exclamation-triangle"></i>
+      <strong>网络错误</strong><br>
+      无法加载${dataType}，请检查网络连接或刷新页面重试。
+      <br><br>
+      <button class="btn btn-sm btn-primary" onclick="location.reload()">
+        <i class="fa fa-refresh"></i> 刷新页面
+      </button>
+    </div>
+  `;
+
+  // 根据数据类型显示错误信息
+  if (dataType === '用户数据') {
+    document.getElementById('userList').innerHTML = errorHtml;
+  } else if (dataType === '在线用户数据') {
+    document.getElementById('onlineList').innerHTML = errorHtml;
+  } else if (dataType === '系统日志') {
+    document.getElementById('logList').innerHTML = errorHtml;
+  }
+}
+
+// ================== 系统日志管理 ==================
+let systemLogs = [];
+
+async function loadSystemLogs() {
+  try {
+    console.log('🔄 正在从API加载系统日志...');
+
+    const response = await window.apiService.getSystemLogs();
+    systemLogs = response.data.logs || [];
+
+    console.log(`✅ 获取到 ${systemLogs.length} 条系统日志`);
+    renderSystemLogs();
+  } catch (error) {
+    console.error('❌ 加载系统日志失败:', error);
+    showNetworkError('系统日志');
+  }
+}
+
+function renderSystemLogs() {
+  const list = document.getElementById('logList');
+  if (!list) return;
+
+  if (systemLogs.length === 0) {
+    list.innerHTML = '<div class="text-center text-muted py-4">暂无系统日志</div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  systemLogs.forEach(log => {
+    const logItem = createLogItem(log);
+    list.appendChild(logItem);
+  });
+}
+
+// 导出日志
+function exportLogs() {
+  // 设置默认日期为今天
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('exportStartDate').value = today;
+  document.getElementById('exportEndDate').value = today;
+
+  // 显示导出模态框
+  const modal = new bootstrap.Modal(document.getElementById('exportLogsModal'));
+  modal.show();
+}
+
+async function confirmExportLogs() {
+  const startDate = document.getElementById('exportStartDate').value;
+  const endDate = document.getElementById('exportEndDate').value;
+  const logLevel = document.getElementById('exportLogLevel').value;
+
+  if (!startDate || !endDate) {
+    alert('请选择导出日期范围');
+    return;
+  }
+
+  try {
+    console.log('🔄 正在导出系统日志...');
+
+    const params = {
+      startDate,
+      endDate,
+      level: logLevel,
+      format: 'excel'
+    };
+
+    const response = await window.apiService.exportSystemLogs(params);
+
+    // 创建下载链接
+    const blob = new Blob([response.data], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `系统日志_${startDate}_${endDate}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    // 关闭模态框
+    const modal = bootstrap.Modal.getInstance(document.getElementById('exportLogsModal'));
+    modal.hide();
+
+    console.log('✅ 系统日志导出成功');
+  } catch (error) {
+    console.error('❌ 导出系统日志失败:', error);
+    alert('导出失败，请稍后重试');
+  }
+}
+
+// 清除日志
+function clearLogs() {
+  const modal = new bootstrap.Modal(document.getElementById('clearLogsModal'));
+  modal.show();
+}
+
+async function confirmClearLogs() {
+  try {
+    console.log('🔄 正在清除系统日志...');
+
+    await window.apiService.clearSystemLogs();
+
+    // 重新加载日志
+    await loadSystemLogs();
+
+    // 关闭模态框
+    const modal = bootstrap.Modal.getInstance(document.getElementById('clearLogsModal'));
+    modal.hide();
+
+    console.log('✅ 系统日志清除成功');
+    alert('系统日志已清除');
+  } catch (error) {
+    console.error('❌ 清除系统日志失败:', error);
+    alert('清除失败，请稍后重试');
+  }
+}
+
+// 刷新日志
+function refreshLogs() {
+  loadSystemLogs();
+}
