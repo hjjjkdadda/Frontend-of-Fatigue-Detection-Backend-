@@ -992,191 +992,244 @@ async function generateExcelAllReport(reportData) {
 
 // 生成Word格式的总体报告
 async function generateWordAllReport(reportData) {
-  const doc = new docx.Document({
-    sections: [{
-      properties: {},
-      children: [
-        // 标题
+  try {
+    // 检查docx库是否可用
+    if (typeof docx === 'undefined') {
+      throw new Error('docx库未加载');
+    }
+
+    // 创建段落数组
+    const paragraphs = [
+      // 标题
+      new docx.Paragraph({
+        children: [
+          new docx.TextRun({
+            text: "驾驶人员总体疲劳监测报告",
+            bold: true,
+            size: 32
+          })
+        ],
+        alignment: docx.AlignmentType.CENTER,
+        spacing: { after: 400 }
+      }),
+
+      // 报告概览标题
+      new docx.Paragraph({
+        children: [
+          new docx.TextRun({
+            text: "报告概览",
+            bold: true,
+            size: 24
+          })
+        ],
+        spacing: { before: 200, after: 200 }
+      }),
+
+      // 基本信息
+      new docx.Paragraph({
+        children: [new docx.TextRun(`报告生成时间：${reportData.reportDate} ${reportData.reportTime}`)]
+      }),
+      new docx.Paragraph({
+        children: [new docx.TextRun(`总驾驶人员数：${reportData.overallStats.totalUsers}人`)]
+      }),
+      new docx.Paragraph({
+        children: [new docx.TextRun(`在线人员数：${reportData.overallStats.onlineUsers}人`)]
+      }),
+      new docx.Paragraph({
+        children: [new docx.TextRun(`离线人员数：${reportData.overallStats.offlineUsers}人`)]
+      }),
+      new docx.Paragraph({
+        children: [new docx.TextRun(`总疲劳事件数：${reportData.overallStats.totalFatigueEvents}次`)]
+      }),
+      new docx.Paragraph({
+        children: [new docx.TextRun(`总疲劳时长：${reportData.overallStats.totalFatigueDuration}秒`)]
+      }),
+      new docx.Paragraph({
+        children: [new docx.TextRun(`人均疲劳事件：${reportData.overallStats.avgFatiguePerUser}次`)]
+      }),
+      new docx.Paragraph({
+        children: [new docx.TextRun(`人均疲劳时长：${reportData.overallStats.avgDurationPerUser}秒`)]
+      }),
+
+      // 风险等级分布标题
+      new docx.Paragraph({
+        children: [
+          new docx.TextRun({
+            text: "风险等级分布",
+            bold: true,
+            size: 24
+          })
+        ],
+        spacing: { before: 400, after: 200 }
+      }),
+
+      // 风险等级数据
+      new docx.Paragraph({
+        children: [new docx.TextRun(`高风险人员：${reportData.riskLevels.high}人`)]
+      }),
+      new docx.Paragraph({
+        children: [new docx.TextRun(`中风险人员：${reportData.riskLevels.medium}人`)]
+      }),
+      new docx.Paragraph({
+        children: [new docx.TextRun(`低风险人员：${reportData.riskLevels.low}人`)]
+      })
+    ];
+
+    // 添加前5名疲劳事件最多的驾驶员
+    if (reportData.usersByFatigueCount.length > 0) {
+      paragraphs.push(
         new docx.Paragraph({
           children: [
             new docx.TextRun({
-              text: "驾驶人员总体疲劳监测报告",
+              text: "疲劳事件最多的前5名驾驶员",
               bold: true,
-              size: 32,
-              color: "2E7D32"
-            })
-          ],
-          alignment: docx.AlignmentType.CENTER,
-          spacing: { after: 400 }
-        }),
-
-        // 报告信息
-        new docx.Paragraph({
-          children: [
-            new docx.TextRun({
-              text: "报告概览",
-              bold: true,
-              size: 24,
-              color: "2E7D32"
-            })
-          ],
-          spacing: { before: 200, after: 200 }
-        }),
-
-        new docx.Paragraph({
-          children: [
-            new docx.TextRun(`报告生成时间：${reportData.reportDate} ${reportData.reportTime}`)
-          ]
-        }),
-
-        new docx.Paragraph({
-          children: [
-            new docx.TextRun(`总驾驶人员数：${reportData.overallStats.totalUsers}人`)
-          ]
-        }),
-
-        new docx.Paragraph({
-          children: [
-            new docx.TextRun(`在线人员数：${reportData.overallStats.onlineUsers}人`)
-          ]
-        }),
-
-        new docx.Paragraph({
-          children: [
-            new docx.TextRun(`总疲劳事件数：${reportData.overallStats.totalFatigueEvents}次`)
-          ]
-        }),
-
-        new docx.Paragraph({
-          children: [
-            new docx.TextRun(`总疲劳时长：${reportData.overallStats.totalFatigueDuration}秒`)
-          ]
-        }),
-
-        // 风险分析
-        new docx.Paragraph({
-          children: [
-            new docx.TextRun({
-              text: "风险等级分布",
-              bold: true,
-              size: 24,
-              color: "2E7D32"
+              size: 24
             })
           ],
           spacing: { before: 400, after: 200 }
-        }),
-
-        new docx.Paragraph({
-          children: [
-            new docx.TextRun(`高风险人员：${reportData.riskLevels.high}人`)
-          ]
-        }),
-
-        new docx.Paragraph({
-          children: [
-            new docx.TextRun(`中风险人员：${reportData.riskLevels.medium}人`)
-          ]
-        }),
-
-        new docx.Paragraph({
-          children: [
-            new docx.TextRun(`低风险人员：${reportData.riskLevels.low}人`)
-          ]
         })
-      ]
-    }]
-  });
+      );
 
-  const buffer = await docx.Packer.toBlob(doc);
-  const fileName = `总体疲劳报告_${reportData.reportDate}.docx`;
-
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(buffer);
-  link.download = fileName;
-  link.click();
-}
-
-// 生成PDF格式的总体报告（通过Word转换）
-async function generatePdfAllReport(reportData) {
-  // 生成HTML内容用于PDF转换
-  const htmlContent = `
-    <div style="font-family: 'Microsoft YaHei', Arial, sans-serif; padding: 20px; line-height: 1.6;">
-      <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="color: #2E7D32; font-size: 24px;">驾驶人员总体疲劳监测报告</h1>
-        <p style="color: #666; font-size: 12px;">报告日期: ${reportData.reportDate} ${reportData.reportTime}</p>
-      </div>
-
-      <div style="margin-bottom: 25px;">
-        <h3 style="color: #2E7D32; border-bottom: 2px solid #2E7D32; padding-bottom: 5px;">整体统计概览</h3>
-        <p>总驾驶人员数：${reportData.overallStats.totalUsers}人</p>
-        <p>在线人员数：${reportData.overallStats.onlineUsers}人</p>
-        <p>离线人员数：${reportData.overallStats.offlineUsers}人</p>
-        <p>总疲劳事件数：${reportData.overallStats.totalFatigueEvents}次</p>
-        <p>总疲劳时长：${reportData.overallStats.totalFatigueDuration}秒</p>
-        <p>人均疲劳事件：${reportData.overallStats.avgFatiguePerUser}次</p>
-        <p>人均疲劳时长：${reportData.overallStats.avgDurationPerUser}秒</p>
-      </div>
-
-      <div style="margin-bottom: 25px;">
-        <h3 style="color: #2E7D32; border-bottom: 2px solid #2E7D32; padding-bottom: 5px;">风险等级分布</h3>
-        <p>高风险人员：${reportData.riskLevels.high}人</p>
-        <p>中风险人员：${reportData.riskLevels.medium}人</p>
-        <p>低风险人员：${reportData.riskLevels.low}人</p>
-      </div>
-
-      <div style="margin-bottom: 25px;">
-        <h3 style="color: #2E7D32; border-bottom: 2px solid #2E7D32; padding-bottom: 5px;">疲劳次数前5名</h3>
-        ${reportData.usersByFatigueCount.slice(0, 5).map((user, index) =>
-          `<p>${index + 1}. ${user.username} - ${user.fatigueCount}次 (${user.fatigueDuration}秒)</p>`
-        ).join('')}
-      </div>
-    </div>
-  `;
-
-  // 创建临时容器
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = htmlContent;
-  tempDiv.style.cssText = `
-    position: absolute;
-    left: -9999px;
-    top: -9999px;
-    width: 210mm;
-    padding: 20mm;
-  `;
-
-  document.body.appendChild(tempDiv);
-
-  try {
-    const canvas = await html2canvas(tempDiv, {
-      scale: 2,
-      useCORS: true,
-      allowTaint: true
-    });
-
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF.jsPDF('p', 'mm', 'a4');
-
-    const imgWidth = 210;
-    const pageHeight = 295;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    let heightLeft = imgHeight;
-
-    let position = 0;
-
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
-
-    while (heightLeft >= 0) {
-      position = heightLeft - imgHeight;
-      pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+      reportData.usersByFatigueCount.slice(0, 5).forEach((user, index) => {
+        paragraphs.push(
+          new docx.Paragraph({
+            children: [new docx.TextRun(`${index + 1}. ${user.username} - 疲劳${user.fatigueCount}次，时长${user.fatigueDuration}秒`)]
+          })
+        );
+      });
     }
 
-    const fileName = `总体疲劳报告_${reportData.reportDate}.pdf`;
-    pdf.save(fileName);
+    const doc = new docx.Document({
+      sections: [{
+        properties: {},
+        children: paragraphs
+      }]
+    });
 
-  } finally {
-    document.body.removeChild(tempDiv);
+    const buffer = await docx.Packer.toBlob(doc);
+    const fileName = `总体疲劳报告_${reportData.reportDate}.docx`;
+
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(buffer);
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } catch (error) {
+    console.error('生成Word总体报告失败:', error);
+    throw error;
+  }
+}
+
+// 生成PDF格式的总体报告（通过HTML转换）
+async function generatePdfAllReport(reportData) {
+  try {
+    // 检查必要的库是否可用
+    if (typeof html2canvas === 'undefined') {
+      throw new Error('html2canvas库未加载');
+    }
+    if (typeof jsPDF === 'undefined') {
+      throw new Error('jsPDF库未加载');
+    }
+
+    // 生成HTML内容用于PDF转换
+    const htmlContent = `
+      <div style="font-family: 'Microsoft YaHei', 'SimSun', Arial, sans-serif; padding: 40px; line-height: 1.8; color: #333; background: white;">
+        <div style="text-align: center; margin-bottom: 40px;">
+          <h1 style="color: #2E7D32; font-size: 28px; margin-bottom: 10px;">驾驶人员总体疲劳监测报告</h1>
+          <p style="color: #666; font-size: 14px;">报告日期: ${reportData.reportDate} ${reportData.reportTime}</p>
+        </div>
+
+        <div style="margin-bottom: 30px;">
+          <h3 style="color: #2E7D32; border-bottom: 2px solid #2E7D32; padding-bottom: 8px; font-size: 20px;">整体统计概览</h3>
+          <p style="margin: 8px 0;">总驾驶人员数：${reportData.overallStats.totalUsers}人</p>
+          <p style="margin: 8px 0;">在线人员数：${reportData.overallStats.onlineUsers}人</p>
+          <p style="margin: 8px 0;">离线人员数：${reportData.overallStats.offlineUsers}人</p>
+          <p style="margin: 8px 0;">总疲劳事件数：${reportData.overallStats.totalFatigueEvents}次</p>
+          <p style="margin: 8px 0;">总疲劳时长：${reportData.overallStats.totalFatigueDuration}秒</p>
+          <p style="margin: 8px 0;">人均疲劳事件：${reportData.overallStats.avgFatiguePerUser}次</p>
+          <p style="margin: 8px 0;">人均疲劳时长：${reportData.overallStats.avgDurationPerUser}秒</p>
+        </div>
+
+        <div style="margin-bottom: 30px;">
+          <h3 style="color: #2E7D32; border-bottom: 2px solid #2E7D32; padding-bottom: 8px; font-size: 20px;">风险等级分布</h3>
+          <p style="margin: 8px 0;">高风险人员：${reportData.riskLevels.high}人</p>
+          <p style="margin: 8px 0;">中风险人员：${reportData.riskLevels.medium}人</p>
+          <p style="margin: 8px 0;">低风险人员：${reportData.riskLevels.low}人</p>
+        </div>
+
+        <div style="margin-bottom: 30px;">
+          <h3 style="color: #2E7D32; border-bottom: 2px solid #2E7D32; padding-bottom: 8px; font-size: 20px;">疲劳次数前5名驾驶员</h3>
+          ${reportData.usersByFatigueCount.slice(0, 5).map((user, index) =>
+            `<p style="margin: 8px 0;">${index + 1}. ${user.username} - 疲劳${user.fatigueCount}次，时长${user.fatigueDuration}秒</p>`
+          ).join('')}
+        </div>
+
+        <div style="margin-bottom: 30px;">
+          <h3 style="color: #2E7D32; border-bottom: 2px solid #2E7D32; padding-bottom: 8px; font-size: 20px;">管理建议</h3>
+          <p style="margin: 8px 0;">1. 对高风险人员进行重点监控，增加休息频率</p>
+          <p style="margin: 8px 0;">2. 定期组织安全驾驶培训，提高驾驶员安全意识</p>
+          <p style="margin: 8px 0;">3. 建立疲劳驾驶预警机制，及时发现和处理疲劳状态</p>
+          <p style="margin: 8px 0;">4. 合理安排驾驶班次，避免长时间连续驾驶</p>
+          <p style="margin: 8px 0;">5. 加强驾驶员健康管理，定期进行体检</p>
+        </div>
+      </div>
+    `;
+
+    // 创建临时容器
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlContent;
+    tempDiv.style.cssText = `
+      position: absolute;
+      left: -9999px;
+      top: -9999px;
+      width: 800px;
+      background: white;
+    `;
+
+    document.body.appendChild(tempDiv);
+
+    try {
+      // 等待DOM渲染
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const canvas = await html2canvas(tempDiv, {
+        scale: 1.5,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        width: tempDiv.scrollWidth,
+        height: tempDiv.scrollHeight
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF.jsPDF('p', 'mm', 'a4');
+
+      const imgWidth = 210;
+      const pageHeight = 297;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const fileName = `总体疲劳报告_${reportData.reportDate}.pdf`;
+      pdf.save(fileName);
+
+    } finally {
+      document.body.removeChild(tempDiv);
+    }
+  } catch (error) {
+    console.error('生成PDF总体报告失败:', error);
+    throw error;
   }
 }

@@ -266,223 +266,245 @@ class MultiFatigueReportGenerator {
 
   // 生成Word报告
   async generateWordReport() {
-    const doc = new docx.Document({
-      sections: [{
-        properties: {},
-        children: [
-          // 标题
+    try {
+      // 检查docx库是否可用
+      if (typeof docx === 'undefined') {
+        throw new Error('docx库未加载');
+      }
+
+      // 创建Word文档内容
+      const paragraphs = [
+        // 标题
+        new docx.Paragraph({
+          children: [
+            new docx.TextRun({
+              text: "驾驶员疲劳监测报告",
+              bold: true,
+              size: 32
+            })
+          ],
+          alignment: docx.AlignmentType.CENTER,
+          spacing: { after: 400 }
+        }),
+
+        // 基本信息标题
+        new docx.Paragraph({
+          children: [
+            new docx.TextRun({
+              text: "基本信息",
+              bold: true,
+              size: 24
+            })
+          ],
+          spacing: { before: 200, after: 200 }
+        }),
+
+        // 基本信息内容
+        new docx.Paragraph({
+          children: [new docx.TextRun(`报告生成时间：${this.reportData.reportDate} ${this.reportData.reportTime}`)]
+        }),
+        new docx.Paragraph({
+          children: [new docx.TextRun(`驾驶员姓名：${this.user.username}`)]
+        }),
+        new docx.Paragraph({
+          children: [new docx.TextRun(`手机号码：${this.user.phone || '未设置'}`)]
+        }),
+        new docx.Paragraph({
+          children: [new docx.TextRun(`当前状态：${this.user.status || '在线'}`)]
+        }),
+
+        // 统计概览标题
+        new docx.Paragraph({
+          children: [
+            new docx.TextRun({
+              text: "疲劳统计概览",
+              bold: true,
+              size: 24
+            })
+          ],
+          spacing: { before: 400, after: 200 }
+        }),
+
+        // 统计数据
+        new docx.Paragraph({
+          children: [new docx.TextRun(`总事件数：${this.reportData.stats.totalEvents}次`)]
+        }),
+        new docx.Paragraph({
+          children: [new docx.TextRun(`高危事件：${this.reportData.stats.highSeverityEvents}次`)]
+        }),
+        new docx.Paragraph({
+          children: [new docx.TextRun(`中危事件：${this.reportData.stats.mediumSeverityEvents}次`)]
+        }),
+        new docx.Paragraph({
+          children: [new docx.TextRun(`低危事件：${this.reportData.stats.lowSeverityEvents}次`)]
+        }),
+        new docx.Paragraph({
+          children: [new docx.TextRun(`平均持续时间：${this.reportData.stats.avgDuration}秒`)]
+        }),
+        new docx.Paragraph({
+          children: [new docx.TextRun(`最长持续时间：${this.reportData.stats.maxDuration}秒`)]
+        }),
+        new docx.Paragraph({
+          children: [new docx.TextRun(`总持续时间：${this.reportData.stats.totalDuration}秒`)]
+        }),
+
+        // 风险评估标题
+        new docx.Paragraph({
+          children: [
+            new docx.TextRun({
+              text: "风险评估",
+              bold: true,
+              size: 24
+            })
+          ],
+          spacing: { before: 400, after: 200 }
+        }),
+
+        // 风险评估内容
+        new docx.Paragraph({
+          children: [
+            new docx.TextRun({
+              text: `整体风险等级：${this.reportData.riskAssessment.overallRisk}`,
+              bold: true
+            })
+          ]
+        }),
+        new docx.Paragraph({
+          children: [new docx.TextRun(`趋势分析：${this.reportData.riskAssessment.trendAnalysis || '暂无数据'}`)]
+        }),
+        new docx.Paragraph({
+          children: [new docx.TextRun(`类型分析：${this.reportData.riskAssessment.typeAnalysis || '暂无数据'}`)]
+        })
+      ];
+
+      // 添加建议
+      const recommendations = this.generateRecommendations();
+      if (recommendations.length > 0) {
+        paragraphs.push(
           new docx.Paragraph({
             children: [
               new docx.TextRun({
-                text: "驾驶员疲劳监测报告",
+                text: "改进建议",
                 bold: true,
-                size: 32,
-                color: "2E7D32"
-              })
-            ],
-            alignment: docx.AlignmentType.CENTER,
-            spacing: { after: 400 }
-          }),
-          
-          // 基本信息
-          new docx.Paragraph({
-            children: [
-              new docx.TextRun({
-                text: "基本信息",
-                bold: true,
-                size: 24,
-                color: "2E7D32"
-              })
-            ],
-            spacing: { before: 200, after: 200 }
-          }),
-          
-          new docx.Paragraph({
-            children: [
-              new docx.TextRun(`报告生成时间：${this.reportData.reportDate} ${this.reportData.reportTime}`)
-            ]
-          }),
-          
-          new docx.Paragraph({
-            children: [
-              new docx.TextRun(`驾驶员姓名：${this.user.username}`)
-            ]
-          }),
-          
-          new docx.Paragraph({
-            children: [
-              new docx.TextRun(`手机号码：${this.user.phone || '未设置'}`)
-            ]
-          }),
-          
-          new docx.Paragraph({
-            children: [
-              new docx.TextRun(`当前状态：${this.user.status || '在线'}`)
-            ]
-          }),
-          
-          // 统计概览
-          new docx.Paragraph({
-            children: [
-              new docx.TextRun({
-                text: "疲劳统计概览",
-                bold: true,
-                size: 24,
-                color: "2E7D32"
+                size: 24
               })
             ],
             spacing: { before: 400, after: 200 }
-          }),
-          
-          new docx.Paragraph({
-            children: [
-              new docx.TextRun(`总事件数：${this.reportData.stats.totalEvents}次`)
-            ]
-          }),
-          
-          new docx.Paragraph({
-            children: [
-              new docx.TextRun(`高危事件：${this.reportData.stats.highSeverityEvents}次`)
-            ]
-          }),
-          
-          new docx.Paragraph({
-            children: [
-              new docx.TextRun(`中危事件：${this.reportData.stats.mediumSeverityEvents}次`)
-            ]
-          }),
-          
-          new docx.Paragraph({
-            children: [
-              new docx.TextRun(`低危事件：${this.reportData.stats.lowSeverityEvents}次`)
-            ]
-          }),
-          
-          new docx.Paragraph({
-            children: [
-              new docx.TextRun(`平均持续时间：${this.reportData.stats.avgDuration}秒`)
-            ]
-          }),
-          
-          new docx.Paragraph({
-            children: [
-              new docx.TextRun(`最长持续时间：${this.reportData.stats.maxDuration}秒`)
-            ]
-          }),
-          
-          new docx.Paragraph({
-            children: [
-              new docx.TextRun(`总持续时间：${this.reportData.stats.totalDuration}秒`)
-            ]
-          }),
-          
-          // 风险评估
-          new docx.Paragraph({
-            children: [
-              new docx.TextRun({
-                text: "风险评估",
-                bold: true,
-                size: 24,
-                color: "2E7D32"
-              })
-            ],
-            spacing: { before: 400, after: 200 }
-          }),
-          
-          new docx.Paragraph({
-            children: [
-              new docx.TextRun({
-                text: `整体风险等级：${this.reportData.riskAssessment.overallRisk}`,
-                bold: true,
-                color: this.reportData.riskAssessment.riskLevel >= 4 ? "DC3545" : 
-                       this.reportData.riskAssessment.riskLevel >= 3 ? "FFC107" : "28A745"
-              })
-            ]
-          }),
-          
-          new docx.Paragraph({
-            children: [
-              new docx.TextRun(`趋势分析：${this.reportData.riskAssessment.trendAnalysis}`)
-            ]
-          }),
-          
-          new docx.Paragraph({
-            children: [
-              new docx.TextRun(`类型分析：${this.reportData.riskAssessment.typeAnalysis}`)
-            ]
           })
-        ]
-      }]
-    });
-    
-    const buffer = await docx.Packer.toBlob(doc);
-    const fileName = `疲劳报告_${this.user.username}_${this.reportData.reportDate}.docx`;
-    
-    // 下载文件
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(buffer);
-    link.download = fileName;
-    link.click();
-    
-    return true;
+        );
+
+        recommendations.forEach((rec, index) => {
+          paragraphs.push(
+            new docx.Paragraph({
+              children: [new docx.TextRun(`${index + 1}. ${rec}`)]
+            })
+          );
+        });
+      }
+
+      const doc = new docx.Document({
+        sections: [{
+          properties: {},
+          children: paragraphs
+        }]
+      });
+
+      const buffer = await docx.Packer.toBlob(doc);
+      const fileName = `疲劳报告_${this.user.username}_${this.reportData.reportDate}.docx`;
+
+      // 下载文件
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(buffer);
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      return true;
+    } catch (error) {
+      console.error('生成Word报告失败:', error);
+      throw error;
+    }
   }
 
-  // 生成PDF报告（通过Word转换）
+  // 生成PDF报告（通过HTML转换）
   async generatePdfReport() {
-    // 先生成Word文档内容
-    const wordContent = this.generateWordContent();
-    
-    // 创建临时HTML容器用于PDF生成
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = wordContent;
-    tempDiv.style.cssText = `
-      position: absolute;
-      left: -9999px;
-      top: -9999px;
-      width: 210mm;
-      padding: 20mm;
-      font-family: 'Microsoft YaHei', Arial, sans-serif;
-      font-size: 12px;
-      line-height: 1.6;
-      color: #333;
-    `;
-    
-    document.body.appendChild(tempDiv);
-    
     try {
-      // 使用html2canvas和jsPDF生成PDF
-      const canvas = await html2canvas(tempDiv, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true
-      });
-      
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF.jsPDF('p', 'mm', 'a4');
-      
-      const imgWidth = 210;
-      const pageHeight = 295;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      
-      let position = 0;
-      
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-      
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
+      // 检查必要的库是否可用
+      if (typeof html2canvas === 'undefined') {
+        throw new Error('html2canvas库未加载');
+      }
+      if (typeof jsPDF === 'undefined') {
+        throw new Error('jsPDF库未加载');
+      }
+
+      // 生成HTML内容
+      const htmlContent = this.generateWordContent();
+
+      // 创建临时HTML容器用于PDF生成
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = htmlContent;
+      tempDiv.style.cssText = `
+        position: absolute;
+        left: -9999px;
+        top: -9999px;
+        width: 800px;
+        padding: 40px;
+        font-family: 'Microsoft YaHei', 'SimSun', Arial, sans-serif;
+        font-size: 14px;
+        line-height: 1.8;
+        color: #333;
+        background: white;
+      `;
+
+      document.body.appendChild(tempDiv);
+
+      try {
+        // 等待一下让DOM渲染完成
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // 使用html2canvas截图
+        const canvas = await html2canvas(tempDiv, {
+          scale: 1.5,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          width: tempDiv.scrollWidth,
+          height: tempDiv.scrollHeight
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF.jsPDF('p', 'mm', 'a4');
+
+        const imgWidth = 210;
+        const pageHeight = 297;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let heightLeft = imgHeight;
+
+        let position = 0;
+
+        // 添加第一页
         pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
+
+        // 如果内容超过一页，添加更多页面
+        while (heightLeft >= 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+
+        const fileName = `疲劳报告_${this.user.username}_${this.reportData.reportDate}.pdf`;
+        pdf.save(fileName);
+
+        return true;
+      } finally {
+        document.body.removeChild(tempDiv);
       }
-      
-      const fileName = `疲劳报告_${this.user.username}_${this.reportData.reportDate}.pdf`;
-      pdf.save(fileName);
-      
-      return true;
-    } finally {
-      document.body.removeChild(tempDiv);
+    } catch (error) {
+      console.error('生成PDF报告失败:', error);
+      throw error;
     }
   }
 
