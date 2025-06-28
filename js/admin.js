@@ -5,13 +5,7 @@ function createUserItem(user) {
   const template = document.getElementById('user-item-template');
   const userItem = template.content.cloneNode(true);
 
-  // 角色显示映射
-  const roleMap = {
-    'admin': '管理员',
-    'monitor': '监控人员',
-    'driver': '驾驶员'
-  };
-  const roleDisplay = roleMap[user.role] || user.role;
+  const roleDisplay = getRoleText(user.role);
 
   // 设置用户信息
   userItem.querySelector('.user-name').textContent = user.username;
@@ -332,9 +326,7 @@ window.closeEditUserModal = function() {
   document.getElementById('editUserModal').style.display = 'none';
 }
 
-function gotoLog() {
-  window.api.navigate('log.html');
-}
+
 
 function logout() {
   const modalEl = document.getElementById('logoutModal');
@@ -467,8 +459,11 @@ function renderOnlineUserList() {
 
 function renderOnlineCharts(users) {
   // 统计各角色在线人数
-  const roleMap = {};
-  users.forEach(u => { roleMap[u.role] = (roleMap[u.role]||0)+1; });
+  const roleStats = {};
+  users.forEach(u => {
+    const roleText = getRoleText(u.role);
+    roleStats[roleText] = (roleStats[roleText] || 0) + 1;
+  });
   // 饼图
   const chartDom = document.getElementById('onlineUserChart');
   if (chartDom && window.echarts) {
@@ -491,9 +486,9 @@ function renderOnlineCharts(users) {
           avoidLabelOverlap: false,
           label: { show: true, formatter: '{b}: {c}人' },
           emphasis: { label: { show: true, fontSize: '16', fontWeight: 'bold' } },
-          data: Object.keys(roleMap).map(role => ({
+          data: Object.keys(roleStats).map(role => ({
             name: role,
-            value: roleMap[role],
+            value: roleStats[role],
             itemStyle: {
               color: role === '管理员' ? '#1976d2' :
                      role === '监控人员' ? '#43a047' : '#fbc02d'
