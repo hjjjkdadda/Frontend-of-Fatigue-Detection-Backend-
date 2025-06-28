@@ -10,12 +10,9 @@
   <link rel="stylesheet" href="css/user-detail.css">
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.2.2/docx.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="js/api.js"></script>
   <script src="js/models.js"></script>
-  <script src="js/multi-format-report.js"></script>
+  <script src="js/excel-report.js"></script>
 </head>
 <body>
   <header class="user-detail-header">
@@ -56,16 +53,9 @@
         <div class="detail-card">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h5><i class="fa fa-user me-2"></i>用户信息</h5>
-            <div class="d-flex align-items-center" style="display: none;" id="exportReportGroup">
-              <select id="reportFormatSelect" class="form-select form-select-sm me-2" style="width: 120px;">
-                <option value="excel">Excel格式</option>
-                <option value="word">Word格式</option>
-                <option value="pdf">PDF格式</option>
-              </select>
-              <button id="exportReportBtn" class="btn btn-success btn-sm">
-                <i class="fa fa-file-excel-o me-2"></i>导出报告
-              </button>
-            </div>
+            <button id="exportReportBtn" class="btn btn-success btn-sm" style="display: none;">
+              <i class="fa fa-file-excel-o me-2"></i>导出疲劳报告
+            </button>
           </div>
           <div id="userInfoCard"></div>
         </div>

@@ -606,31 +606,17 @@ class UserDetailPage {
 
   // 设置导出按钮
   setupExportButton() {
-    const exportGroup = document.getElementById('exportReportGroup');
     const exportBtn = document.getElementById('exportReportBtn');
-    const formatSelect = document.getElementById('reportFormatSelect');
 
-    if (!exportGroup || !exportBtn || !formatSelect) return;
+    if (!exportBtn) return;
 
     // 检查用户角色，只有监控人员可以看到导出按钮
     const currentUserRole = this.getCurrentUserRole();
     if (currentUserRole === 'monitor' || currentUserRole === 'admin') {
-      exportGroup.style.display = 'flex';
-
-      // 格式选择变化时更新按钮图标
-      formatSelect.addEventListener('change', () => {
-        const format = formatSelect.value;
-        const iconClass = format === 'excel' ? 'fa-file-excel-o' :
-                         format === 'word' ? 'fa-file-word-o' : 'fa-file-pdf-o';
-        exportBtn.innerHTML = `<i class="fa ${iconClass} me-2"></i>导出报告`;
-      });
-
-      // 触发初始图标设置
-      formatSelect.dispatchEvent(new Event('change'));
-
+      exportBtn.style.display = 'inline-block';
       exportBtn.addEventListener('click', () => this.handleExportReport());
     } else {
-      exportGroup.style.display = 'none';
+      exportBtn.style.display = 'none';
     }
   }
 
@@ -652,39 +638,28 @@ class UserDetailPage {
   // 处理导出报告
   async handleExportReport() {
     const exportBtn = document.getElementById('exportReportBtn');
-    const formatSelect = document.getElementById('reportFormatSelect');
-    if (!exportBtn || !formatSelect) return;
-
-    const format = formatSelect.value;
-    const formatNames = {
-      excel: 'Excel',
-      word: 'Word',
-      pdf: 'PDF'
-    };
+    if (!exportBtn) return;
 
     try {
       // 显示加载状态
-      const originalText = exportBtn.innerHTML;
       exportBtn.innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i>生成中...';
       exportBtn.disabled = true;
 
-      // 生成指定格式的报告
+      // 生成Excel报告
       if (window.fatigueReportGenerator) {
-        await window.fatigueReportGenerator.generateReport(this.user, format);
+        await window.fatigueReportGenerator.generateReport(this.user);
 
         // 显示成功消息
-        this.showSuccessMessage(`${formatNames[format]}疲劳报告已成功生成并下载！`);
+        this.showSuccessMessage('Excel疲劳报告已成功生成并下载！');
       } else {
-        throw new Error('报告生成器未加载');
+        throw new Error('Excel报告生成器未加载');
       }
     } catch (error) {
       console.error('导出报告失败:', error);
       this.showErrorMessage('导出报告失败，请稍后重试');
     } finally {
       // 恢复按钮状态
-      const iconClass = format === 'excel' ? 'fa-file-excel-o' :
-                       format === 'word' ? 'fa-file-word-o' : 'fa-file-pdf-o';
-      exportBtn.innerHTML = `<i class="fa ${iconClass} me-2"></i>导出报告`;
+      exportBtn.innerHTML = '<i class="fa fa-file-excel-o me-2"></i>导出疲劳报告';
       exportBtn.disabled = false;
     }
   }

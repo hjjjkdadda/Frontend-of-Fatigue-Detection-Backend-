@@ -9,9 +9,6 @@
   <link rel="stylesheet" href="css/monitor.css">
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.2.2/docx.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <link rel="stylesheet" href="https://www.mobanwang.com/style/css/bootstrap/5.1.1/css/bootstrap.min.css">
   <script src="https://www.mobanwang.com/style/css/bootstrap/5.1.1/js/bootstrap.bundle.min.js"></script>
   <style>
@@ -68,16 +65,9 @@
     <div id="monitor-user-monitor" style="display:none;">
       <div class="d-flex mb-2 align-items-center">
         <input id="userMonitorSearch" type="text" class="form-control me-2" style="max-width:220px;" placeholder="搜索用户名/手机号">
-        <div class="d-flex align-items-center me-3">
-          <select id="allReportFormatSelect" class="form-select form-select-sm me-2" style="width: 120px;">
-            <option value="excel">Excel格式</option>
-            <option value="word">Word格式</option>
-            <option value="pdf">PDF格式</option>
-          </select>
-          <button id="exportAllReportBtn" class="btn btn-success btn-sm">
-            <i class="fa fa-file-excel-o me-2" ></i>导出总体报告
-          </button>
-        </div>
+        <button id="exportAllReportBtn" class="btn btn-success btn-sm me-3">
+          <i class="fa fa-file-excel-o me-2"></i>导出总体疲劳报告
+        </button>
         <span class="ms-auto">排序方式
           <select id="userMonitorSort" class="form-select d-inline-block" style="width:120px;display:inline-block;">
             <option value="username">用户名</option>
