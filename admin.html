@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-cn" class="admin-style">
+<head>
+  <meta charset="UTF-8">
+  <title>管理员主页面</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="keywords" content="管理,系统">
+  <meta name="description" content="管理,系统">
+  <link rel="stylesheet" href="https://www.mobanwang.com/style/css/demo.css">
+  <link rel="stylesheet" href="https://www.mobanwang.com/style/css/font-awesome-4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="https://www.mobanwang.com/style/css/bootstrap/5.1.1/css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <style>
+
+  </style>
+  <script src="https://www.mobanwang.com/style/css/bootstrap/5.1.1/js/bootstrap.bundle.min.js"></script>
+</head>
+<body>
+  <header class="admin-header d-flex align-items-center justify-content-between">
+    <div class="logo"><i class="fa fa-cogs"></i> 管理员后台</div>
+    <button class="btn btn-danger logout-btn" onclick="logout()">注销</button>
+  </header>
+  <div class="d-flex">
+    <nav class="admin-sidebar d-flex flex-column">
+      <a class="nav-link active" id="menu-users" href="#" onclick="showPanel('users')"><i class="fa fa-users"></i> 管理用户</a>
+      <a class="nav-link" id="menu-online" href="#" onclick="showPanel('online')"><i class="fa fa-user-circle"></i> 在线用户</a>
+      <a class="nav-link" id="menu-logs" href="#" onclick="showPanel('logs')"><i class="fa fa-list-alt"></i> 系统日志和状态</a>
+    </nav>
+    <main class="admin-content flex-fill">
+      <div id="panel-users">
+        <h4 class="mb-4"><i class="fa fa-users"></i> 用户管理</h4>
+        <button id="showAddUser" class="btn btn-primary mb-3" style="width:100px;">添加用户</button>
+        <div class="d-flex mb-3 align-items-center justify-content-between" style="gap:12px;">
+          <div class="d-flex align-items-center" style="gap:12px;">
+            <input id="userSearchInput" class="form-control form-control-sm" style="width:180px;" placeholder="搜索用户名/手机号" />
+            <select id="userRoleFilter" class="form-select form-select-sm" style="width:120px;">
+              <option value="">全部角色</option>
+              <option value="admin">管理员</option>
+              <option value="monitor">监控人员</option>
+              <option value="driver">驾驶员</option>
+            </select>
+            <select id="userSortSelect" class="form-select form-select-sm" style="width:120px;">
+              <option value="username">用户名排序</option>
+              <option value="role">角色排序</option>
+            </select>
+            <button class="btn btn-sm btn-primary" id="userSearchBtn" style="width:60px;margin-top:unset">搜索</button>
+          </div>
+          <!-- 右侧：每页显示条数选择框 -->
+          <select id="userPageSizeSelect" class="form-select form-select-sm" style="width:100px;">
+            <option value="10">10条/页</option>
+            <option value="15">15条/页</option>
+            <option value="20">20条/页</option>
+          </select>
+        </div>
+        <div class="user-list-container">
+          <div class="user-list" id="userList"></div>
+        </div>
+        <!-- 新增：分页控件 -->
+        <nav id="userPaginationNav" aria-label="用户分页" style="margin-top:10px;"></nav>
+        <!-- 添加用户弹窗 -->
+        <div id="addUserModal" class="modal" tabindex="-1">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header"><h5 class="modal-title">添加用户</h5><button type="button" class="btn-close" onclick="closeAddUserModal()"></button></div>
+              <div class="modal-body d-flex flex-column align-items-center">
+                <input id="modalUser" class="form-control mb-2" placeholder="用户名" style="width:220px;" />
+                <input id="modalPwd" type="password" class="form-control mb-2" placeholder="密码" style="width:220px;" />
+                <select id="modalRole" class="form-select mb-2" style="width:220px;">
+                  <option value="admin">管理员</option>
+                  <option value="monitor">监控人员</option>
+                </select>
+                <input id="modalPhone" class="form-control mb-2" placeholder="手机号" style="width:220px;" />
+                <div id="modalMsg" style="color:#d32f2f;height:20px;"></div>
+              </div>
+              <div class="modal-footer">
+                <button id="addUserBtn" class="btn btn-primary" style="width:80px;">添加</button>
+                <button type="button" class="btn btn-secondary" onclick="closeAddUserModal()" style="width:80px;">取消</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 编辑用户弹窗 -->
+        <div id="editUserModal" class="modal" tabindex="-1">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header"><h5 class="modal-title">编辑用户</h5><button type="button" class="btn-close" onclick="closeEditUserModal()"></button></div>
+              <div class="modal-body d-flex flex-column align-items-center">
+                <input id="editModalUser" class="form-control mb-2" placeholder="用户名" style="width:220px;" />
+                <input id="editModalPwd" type="password" class="form-control mb-2" placeholder="密码(留空不修改)" style="width:220px;" />
+                <select id="editModalRole" class="form-select mb-2" style="width:220px;">
+                  <option value="admin">管理员</option>
+                  <option value="monitor">监控人员</option>
+                </select>
+                <input id="editModalPhone" class="form-control mb-2" placeholder="手机号" style="width:220px;" />
+                <div id="editModalMsg" style="color:#d32f2f;height:20px;"></div>
+              </div>
+              <div class="modal-footer">
+                <button id="editUserBtn" class="btn btn-primary" style="width:80px;">保存</button>
+                <button type="button" class="btn btn-secondary" onclick="closeEditUserModal()" style="width:80px;">取消</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 删除用户确认弹窗 -->
+        <div id="deleteUserModal" class="modal fade" tabindex="-1">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title"><i class="fa fa-trash"></i> 确认删除</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                <p style="font-size:1.1rem;">确定要删除该用户吗？此操作不可恢复。</p>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-danger" id="deleteUserConfirmBtn">确认删除</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="panel-online" style="display:none;">
+        <h4 class="mb-4"><i class="fa fa-user-circle"></i> 在线用户</h4>
+        <!-- 新增：筛选、排序、搜索、刷新控件 -->
+        <div class="d-flex mb-3 align-items-center" style="gap:12px;">
+          <select id="onlineRoleFilter" class="form-select form-select-sm" style="width:120px;">
+            <option value="">全部角色</option>
+            <option value="管理员">管理员</option>
+            <option value="监控人员">监控人员</option>
+            <option value="驾驶员">驾驶员</option>
+          </select>
+          <select id="onlineSortSelect" class="form-select form-select-sm" style="width:120px;">
+            <option value="username">用户名排序</option>
+            <option value="role">角色排序</option>
+          </select>
+          <input id="onlineSearchInput" class="form-control form-control-sm" style="width:180px;" placeholder="搜索用户名" />
+          <button class="btn btn-sm btn-primary" id="onlineRefreshBtn" style="width:60px;margin-top:unset">刷新</button>
+        </div>
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <!-- 在线用户列表 -->
+            <div class="card">
+              <div class="card-header">
+                <h6 class="mb-0">在线用户列表</h6>
+              </div>
+              <div class="card-body p-0">
+                <div class="scrollable-list" id="onlineList"></div>
+              </div>
+            </div>
+
+          </div>
+          <div class="col-md-6">
+            <!-- 在线用户统计图表 - 调整顺序，趋势图在最上面 -->
+            <div class="card p-2 mb-3">
+              <div id="onlineTrendChart" style="height:250px;"></div>
+            </div>
+            <div class="card p-2">
+              <div id="onlineUserChart" style="height:220px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="panel-logs" style="display:none;">
+        <h4 class="mb-4"><i class="fa fa-list-alt"></i> 系统日志与状态</h4>
+        <div class="card">
+          <div class="card-header">
+            <h6 class="mb-0">系统操作日志</h6>
+          </div>
+          <div class="card-body p-0">
+            <div class="scrollable-list" id="logList" style="max-height:500px;">
+              <div class="text-center text-muted py-4">加载中...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <div id="logoutModal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fa fa-sign-out"></i> 确认注销</h5>
+        </div>
+        <div class="modal-body">
+          <p style="font-size:1.1rem;">确定要注销并退出后台管理系统吗？</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger" id="logoutConfirmBtn">确认注销</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HTML模板 -->
+  <template id="user-item-template">
+    <div class="user-item">
+      <div class="user-info">
+        <div class="user-details">
+          <div class="user-name"></div>
+          <small class="user-phone"></small>
+        </div>
+        <span class="user-badge"></span>
+      </div>
+      <div class="actions">
+        <button class="btn btn-info btn-sm action-btn-edit">
+          <i class="fa fa-edit me-1"></i>编辑
+        </button>
+        <button class="btn btn-danger btn-sm action-btn-delete">
+          <i class="fa fa-trash me-1"></i>删除
+        </button>
+      </div>
+    </div>
+  </template>
+
+  <template id="online-user-item-template">
+    <div class="online-user-item">
+      <div class="user-main-info">
+        <div class="user-details">
+          <span class="user-name"></span>
+          <small class="user-phone"></small>
+          <small class="user-login-time"></small>
+        </div>
+        <span class="user-role-badge"></span>
+      </div>
+    </div>
+  </template>
+
+  <template id="log-item-template">
+    <div class="log-item">
+      <div class="log-header">
+        <div class="log-icon"></div>
+        <div class="log-content">
+          <div>
+            <strong class="log-user"></strong>
+            <span class="log-action"></span>
+            <span class="log-role-badge"></span>
+          </div>
+          <small class="log-time"></small>
+        </div>
+      </div>
+      <div class="log-detail"></div>
+    </div>
+  </template>
+
+  <script src="js/api.js"></script>
+  <script src="js/models.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

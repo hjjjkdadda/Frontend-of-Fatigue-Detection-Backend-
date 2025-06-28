@@ -1,0 +1,447 @@
+/* 管理员页面专用样式
+
+/* 用户项样式 */
+.user-item {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  border: 1px solid #f1f3f4;
+  transition: all 0.3s ease;
+}
+
+.user-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  border-color: #1976d2;
+}
+
+.user-item .user-info {
+  display: flex;
+  align-items: center;
+}
+
+.user-item .user-info .user-details {
+  margin-right: 12px;
+}
+
+.user-item .user-info .user-name {
+  font-weight: bold;
+  color: #212529;
+}
+
+.user-item .user-info .user-phone {
+  font-size: 12px;
+  color: #6c757d;
+  margin-top: 2px;
+}
+
+.user-item .user-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.user-item .actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.user-item .actions .btn {
+  width: 80px;
+  font-size: 12px;
+  padding: 6px 12px;
+  transition: all 0.3s ease;
+}
+
+.user-item .actions .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* 分页样式 */
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.pagination-container .page-btn {
+  padding: 6px 12px;
+  border: 1px solid #dee2e6;
+  background: #fff;
+  color: #495057;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.pagination-container .page-btn:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+}
+
+.pagination-container .page-btn.active {
+  background: #1976d2;
+  border-color: #1976d2;
+  color: white;
+}
+
+.pagination-container .page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 日志项样式 */
+.log-item {
+  padding: 12px;
+  border-bottom: 1px solid #e9ecef;
+  transition: background-color 0.3s ease;
+}
+
+.log-item:hover {
+  background-color: #f8f9fa;
+}
+
+.log-item .log-header {
+  display: flex;
+  justify-content: between;
+  align-items: start;
+}
+
+.log-item .log-icon {
+  margin-right: 12px;
+  font-size: 16px;
+}
+
+.log-item .log-content {
+  flex-grow: 1;
+}
+
+.log-item .log-user {
+  font-weight: bold;
+  color: #212529;
+}
+
+.log-item .log-action {
+  color: #6c757d;
+  margin-left: 8px;
+}
+
+.log-item .log-time {
+  font-size: 12px;
+  color: #6c757d;
+}
+
+.log-item .log-detail {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #6c757d;
+}
+
+/* 在线用户项样式 */
+.online-user-item {
+  background: #fff;
+  border-radius: 6px;
+  padding: 12px;
+  margin: 8px 12px 8px 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+}
+
+.online-user-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.online-user-item .user-main-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.online-user-item .user-details {
+  flex-grow: 1;
+}
+
+.online-user-item .user-name {
+  font-weight: bold;
+  color: #212529;
+}
+
+.online-user-item .user-phone {
+  font-size: 12px;
+  color: #6c757d;
+  display: block;
+  margin-top: 2px;
+}
+
+.online-user-item .user-login-time {
+  font-size: 12px;
+  color: #6c757d;
+  display: block;
+  margin-top: 2px;
+}
+
+.online-user-item .user-role-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* 角色颜色 */
+.role-admin {
+  background-color: #1976d2;
+  color: white;
+}
+
+.role-monitor {
+  background-color: #43a047;
+  color: white;
+}
+
+.role-driver {
+  background-color: #fbc02d;
+  color: #23272e;
+}
+
+/* 状态指示器 */
+.status-online {
+  color: #43a047;
+}
+
+.status-offline {
+  color: #6c757d;
+}
+
+/* 疲劳等级颜色 */
+.fatigue-high {
+  background-color: #f44336;
+  color: white;
+}
+
+.fatigue-medium {
+  background-color: #ff9800;
+  color: white;
+}
+
+.fatigue-low {
+  background-color: #43a047;
+  color: white;
+}
+
+/* 操作按钮样式 */
+.action-btn-edit {
+  background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+  border: none;
+  color: white;
+}
+
+.action-btn-edit:hover {
+  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+  color: white;
+}
+
+.action-btn-delete {
+  background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+  border: none;
+  color: white;
+}
+
+.action-btn-delete:hover {
+  background: linear-gradient(135deg, #d32f2f 0%, #c62828 100%);
+  color: white;
+} */
+
+/* ----------------------------------------------------------------------------------- */
+body { background: #f7f9fa; }
+.admin-sidebar { min-width: 220px; background: #263238; color: #fff; min-height: 100vh; }
+.admin-sidebar .nav-link { color: #fff; font-size: 18px; padding: 18px 24px; }
+.admin-sidebar .nav-link.active, .admin-sidebar .nav-link:hover { background: #1976d2; color: #fff; }
+.admin-header { background: #fff; border-bottom: 1px solid #e0e0e0; padding: 0 24px; height: 64px; display: flex; align-items: center; justify-content: space-between; }
+.admin-header .logo { font-size: 22px; font-weight: bold; color: #1976d2; }
+.admin-header .logout-btn { width: 80px; min-width: 60px; }
+.admin-content { padding: 32px 24px; background: #f7f9fa; min-height: calc(100vh - 64px); }
+.user-list .user-item { background: #fff; border-radius: 6px; padding: 10px 16px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 4px #eee; }
+.user-list .actions button { margin-left: 8px; }
+.modal-backdrop { z-index: 1040 !important; }
+.modal-content { border-radius: 10px; }
+#logoutModal .modal-content { border-radius: 12px; }
+#logoutModal .modal-header { background: #f7f9fa; border-bottom: none; }
+#logoutModal .modal-title { color: #d32f2f; }
+#logoutModal .modal-footer { border-top: none; }
+
+/* 添加滑动功能样式 */
+.admin-content {
+  height: calc(100vh - 64px);
+  overflow-y: auto;
+  padding: 32px 24px;
+  background: #f7f9fa;
+}
+.admin-content::-webkit-scrollbar {
+  width: 10px;
+}
+.admin-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 5px;
+}
+.admin-content::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #c1c1c1 0%, #a8a8a8 100%);
+  border-radius: 5px;
+}
+.admin-content::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #a8a8a8 0%, #909090 100%);
+}
+
+/* 用户列表容器样式 */
+.user-list-container {
+  max-height: 500px;
+  overflow-y: auto;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+.user-list-container::-webkit-scrollbar {
+  width: 8px;
+}
+.user-list-container::-webkit-scrollbar-track {
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+.user-list-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #dee2e6 0%, #adb5bd 100%);
+  border-radius: 4px;
+}
+.user-list-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #adb5bd 0%, #6c757d 100%);
+}
+
+/* 用户项样式增强 */
+.user-item {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin: 8px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  border: 1px solid #f1f3f4;
+  transition: all 0.3s ease;
+}
+.user-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  border-color: #1976d2;
+}
+.user-item .actions button {
+  margin-left: 8px;
+  transition: all 0.3s ease;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+}
+.user-item .actions button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* 滚动列表通用样式 */
+.scrollable-list {
+  max-height: 450px;
+  overflow-y: auto;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fff;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+.scrollable-list::-webkit-scrollbar {
+  width: 8px;
+}
+.scrollable-list::-webkit-scrollbar-track {
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+.scrollable-list::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #dee2e6 0%, #adb5bd 100%);
+  border-radius: 4px;
+}
+.scrollable-list::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #adb5bd 0%, #6c757d 100%);
+}
+
+/* 按钮样式增强 */
+.btn {
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  font-weight: 500;
+  border: none;
+}
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.btn-primary {
+  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+}
+
+/* 超小按钮样式 */
+.btn-xs {
+  padding: 4px 8px;
+  font-size: 11px;
+  line-height: 1.2;
+  border-radius: 4px;
+  min-width: 32px;
+  height: 28px;
+}
+.btn-xs:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+.btn-xs i {
+  font-size: 11px;
+}
+
+/* 表单控件样式 */
+.form-control, .form-select {
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  transition: all 0.3s ease;
+}
+.form-control:focus, .form-select:focus {
+  border-color: #1976d2;
+  box-shadow: 0 0 0 0.2rem rgba(25, 118, 210, 0.25);
+}
+
+/* 卡片样式 */
+.card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  transition: all 0.3s ease;
+}
+.card:hover {
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+}
+.card-header {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid #dee2e6;
+  border-radius: 12px 12px 0 0 !important;
+  font-weight: 600;
+}
+

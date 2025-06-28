@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-cn" class="monitor-style">
+<head>
+  <meta charset="UTF-8">
+  <title>监控人员主页面</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="css/style.css">
+  <link href="css/font-awesome.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/monitor.css">
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/8.2.2/docx.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <link rel="stylesheet" href="https://www.mobanwang.com/style/css/bootstrap/5.1.1/css/bootstrap.min.css">
+  <script src="https://www.mobanwang.com/style/css/bootstrap/5.1.1/js/bootstrap.bundle.min.js"></script>
+  <style>
+
+  </style>
+</head>
+<body>
+  <header class="monitor-header">
+    <div class="logo"><i class="fa fa-shield"></i> 监控人员后台</div>
+    <button class="logout-btn" id="monitor-logout-btn" style="margin-top: 10px;"><i class="fa fa-sign-out"></i>注销</button>
+  </header>
+  <div class="monitor-content">
+    <ul class="nav nav-tabs mb-3" id="monitorTabNav">
+      <li class="nav-item">
+        <a class="nav-link active" id="tab-dashboard" href="#" onclick="showMonitorTab('dashboard')">统计总览</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" id="tab-user-monitor" href="#" onclick="showMonitorTab('user-monitor')">用户监控</a>
+      </li>
+    </ul>
+    <div id="monitor-dashboard">
+      <div class="dashboard-row">
+        <div class="dashboard-card" id="card-online">
+          <div class="card-label"><i class="fa fa-users"></i> 在线用户数</div>
+          <span id="onlineCount">0</span>
+        </div>
+        <div class="dashboard-card" id="card-total">
+          <div class="card-label"><i class="fa fa-user"></i> 总用户数</div>
+          <span id="totalCount">0</span>
+        </div>
+        <div class="dashboard-card" id="card-fatigue">
+          <div class="card-label"><i class="fa fa-exclamation-triangle"></i> 今日疲劳事件</div>
+          <span id="fatigueCount">0</span>
+        </div>
+      </div>
+      <div class="dashboard-charts">
+        <div class="dashboard-chart" id="pie-fatigue" style="height:220px;"></div>
+        <div class="dashboard-chart" id="bar-duration" style="height:220px;"></div>
+        <div class="dashboard-chart" id="line-trend" style="height:220px;"></div>
+      </div>
+      <div class="danger-list mt-4">
+        <div class="d-flex align-items-center mb-2">
+          <h5 class="mb-0">高风险用户TOP5</h5>
+          <span class="ms-auto">排序方式
+            <select id="dangerSortSelect" class="form-select d-inline-block" style="width:120px;display:inline-block;">
+              <option value="fatigueCount">疲劳次数</option>
+              <option value="fatigueDuration">疲劳时长</option>
+            </select>
+          </span>
+        </div>
+        <div id="dangerList"></div>
+      </div>
+    </div>
+    <div id="monitor-user-monitor" style="display:none;">
+      <div class="d-flex mb-2 align-items-center">
+        <input id="userMonitorSearch" type="text" class="form-control me-2" style="max-width:220px;" placeholder="搜索用户名/手机号">
+        <div class="d-flex align-items-center me-3">
+          <select id="allReportFormatSelect" class="form-select form-select-sm me-2" style="width: 120px;">
+            <option value="excel">Excel格式</option>
+            <option value="word">Word格式</option>
+            <option value="pdf">PDF格式</option>
+          </select>
+          <button id="exportAllReportBtn" class="btn btn-success btn-sm">
+            <i class="fa fa-file-excel-o me-2" ></i>导出总体报告
+          </button>
+        </div>
+        <span class="ms-auto">排序方式
+          <select id="userMonitorSort" class="form-select d-inline-block" style="width:120px;display:inline-block;">
+            <option value="username">用户名</option>
+            <option value="fatigueCount">疲劳次数</option>
+            <option value="fatigueDuration">疲劳时长</option>
+          </select>
+        </span>
+        <span class="ms-3">每页显示
+          <select id="userMonitorPageSize" class="form-select d-inline-block" style="width:80px;display:inline-block;">
+            <option value="10">10</option>
+            <option value="15">15</option>
+            <option value="20">20</option>
+          </select>
+        </span>
+      </div>
+      <div class="table-container">
+        <table class="table table-sm mb-0">
+          <thead>
+            <tr>
+              <th><i class="fa fa-user"></i> 用户名</th>
+              <th><i class="fa fa-exclamation-circle"></i> 疲劳次数</th>
+              <th><i class="fa fa-clock-o"></i> 疲劳时长</th>
+              <th style="width:70px;text-align:center;"><i class="fa fa-cogs"></i> 操作</th>
+            </tr>
+          </thead>
+          <tbody id="userMonitorTableBody"></tbody>
+        </table>
+      </div>
+      <div class="mt-2" id="userMonitorPagination"></div>
+    </div>
+  </div>
+
+  <div id="logoutModal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fa fa-sign-out"></i> 确认注销</h5>
+        </div>
+        <div class="modal-body">
+          <p style="font-size:1.1rem;">确定要注销并退出监控后台吗？</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger" id="logoutConfirmBtn">确认注销</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HTML模板 -->
+  <template id="user-monitor-row-template">
+    <tr class="user-monitor-row">
+      <td>
+        <div class="user-info">
+          <i class="fa fa-user user-icon"></i>
+          <strong class="user-name"></strong>
+        </div>
+      </td>
+      <td>
+        <span class="fatigue-badge"></span>
+      </td>
+      <td>
+        <span class="duration-text"></span>
+      </td>
+      <td>
+        <button type="button" class="btn btn-sm btn-info user-view-btn view-btn">
+          <i class="fa fa-eye me-1"></i>查看
+        </button>
+      </td>
+    </tr>
+  </template>
+
+  <template id="danger-user-row-template">
+    <tr class="danger-user-row">
+      <td>
+        <div class="d-flex align-items-center">
+          <span class="rank-badge"></span>
+          <strong class="user-name"></strong>
+        </div>
+      </td>
+      <td>
+        <span class="fatigue-count-badge"></span>
+      </td>
+      <td>
+        <span class="duration-text"></span>
+      </td>
+      <td>
+        <button type="button" class="btn btn-sm btn-info user-view-btn view-btn">
+          <i class="fa fa-eye me-1"></i>查看
+        </button>
+      </td>
+    </tr>
+  </template>
+
+  <template id="pagination-btn-template">
+    <button class="pagination-btn"></button>
+  </template>
+
+  <template id="empty-state-template">
+    <tr>
+      <td colspan="4" class="empty-state">
+        <i class="fa fa-info-circle"></i>
+        <div class="empty-message"></div>
+      </td>
+    </tr>
+  </template>
+
+  <script src="js/api.js"></script>
+  <script src="js/models.js"></script>
+  <script src="js/monitor.js"></script>
+</body>
+</html>

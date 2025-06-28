@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+
+<head>
+    <title>疲劳检测系统后台 - 登录</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8" />
+    <meta name="keywords" content="疲劳检测系统, 登录, 后台管理, 驾驶员, 监控, 管理员" />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/login.css" type="text/css" media="all" />
+    <link rel="stylesheet" href="css/font-awesome.min.css" type="text/css" media="all">
+    <style>
+        /* 美化角色选择框 */
+        select#role {
+            appearance: none;
+            -webkit-appearance: none;
+            background: #f8fafc url('data:image/svg+xml;utf8,<svg fill="%232d7cf5" height="20" viewBox="0 0 20 20" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M7.293 8.293a1 1 0 011.414 0L10 9.586l1.293-1.293a1 1 0 111.414 1.414l-2 2a1 1 0 01-1.414 0l-2-2a1 1 0 010-1.414z"/></svg>') no-repeat right 0.75em center/1.2em 1.2em;
+            border: 1px solid #e0e3e8;
+            border-radius: 6px;
+            padding: 12px 40px 12px 16px;
+            font-size: 1rem;
+            color: #2d3a4b;
+            box-shadow: 0 2px 8px rgba(45,124,245,0.04);
+            transition: border 0.2s, box-shadow 0.2s;
+            outline: none;
+            margin-bottom: 10px;
+        }
+
+        select#role:focus {
+            border: 1.5px solid #2d7cf5;
+            box-shadow: 0 0 0 2px rgba(45,124,245,0.12);
+        }
+
+        select#role option {
+            color: #2d3a4b;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- form section start -->
+    <section class="w3l-hotair-form">
+        <h1>疲劳检测系统登录</h1>
+        <div class="container">
+            <div class="workinghny-form-grid">
+                <div class="main-hotair">
+                    <div class="content-wthree">
+                        <h2>用户登录</h2>
+                        <form action="#" method="post" onsubmit="return false;">
+                            <input type="text" class="text" id="username" name="username" placeholder="请输入用户名" required
+                                autofocus>
+                            <input type="password" class="password" id="password" name="password" placeholder="请输入密码"
+                                required>
+                            <select id="role" name="role" class="text" required
+                                style="width:100%;margin:10px 0;">
+                                <option value="" disabled selected>请选择角色</option>
+                                <option value="admin">管理员</option>
+                                <option value="monitor">监控人员</option>
+                            </select>
+                            <div id="msg" class="msg"
+                                style="color:#e74c3c;margin:8px 0;min-height:22px;"></div>
+                            <button class="btn form__button" type="button" onclick="login()">登录</button>
+                        </form>
+                    </div>
+                    <div class="w3l_form align-self">
+                        <div class="left_grid_info">
+                            <img src="images/1.png" alt="疲劳检测系统" class="img-fluid">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <script src="js/api.js"></script>
+    <script src="js/models.js"></script>
+    <script src="js/login.js"></script>
+</body>
+
+</html>
