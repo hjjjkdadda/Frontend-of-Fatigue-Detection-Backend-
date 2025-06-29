@@ -15,3 +15,4 @@ contextBridge.exposeInMainWorld('api', {
   saveLogsToLocal: (logs) => ipcRenderer.invoke('saveLogsToLocal', logs),
   deleteLocalLogsFile: () => ipcRenderer.invoke('deleteLocalLogsFile')
 });
+//测试这拉取在哪了
