@@ -34,6 +34,9 @@
     } catch (error) {
       console.error('❌ 加载在线用户失败:', error);
 
+      // 记录网络错误到本地日志
+      await logNetworkError('load_online_users', error, '加载在线用户失败');
+
       // 根据错误类型显示专业的错误信息
       let errorMessage = '网络连接失败，请检查后端服务是否启动';
       if (error.type === 'NETWORK_ERROR') {
@@ -184,6 +187,9 @@
         } catch (error) {
           console.error('刷新在线用户数据失败:', error);
 
+          // 记录网络错误到本地日志
+          await logNetworkError('refresh_online_users', error, '刷新在线用户数据失败');
+
           // 根据错误类型显示专业的错误信息
           let errorMessage = '网络连接失败，请检查后端服务是否启动';
           if (error.type === 'NETWORK_ERROR') {
@@ -229,6 +235,41 @@
           <span>无法加载趋势数据</span>
         </div>
       `;
+    }
+  }
+
+  // 记录网络错误到本地日志
+  async function logNetworkError(action, error, detail = '') {
+    try {
+      // 获取当前用户信息
+      let currentUser = null;
+      try {
+        currentUser = await window.api.getCurrentUser();
+      } catch (userError) {
+        console.warn('⚠️ 获取当前用户失败:', userError);
+      }
+
+      const logData = {
+        time: new Date().toISOString(),
+        user: currentUser?.username || 'Unknown',
+        action: `network_error_${action}`,
+        level: 'error',
+        detail: `网络错误: ${detail || action}`,
+        role: currentUser?.role || null,
+        error: error.message || '网络连接失败',
+        stack: error.stack || null
+      };
+
+      console.log('📝 记录网络错误到本地日志:', logData);
+
+      // 只记录到本地日志（因为网络有问题，无法发送到后端）
+      if (window.api && window.api.addLog) {
+        await window.api.addLog(logData);
+        console.log('✅ 网络错误已记录到本地日志');
+      }
+    } catch (logError) {
+      console.warn('⚠️ 记录网络错误日志失败:', logError);
+      // 不抛出错误，避免影响主要功能
     }
   }
 

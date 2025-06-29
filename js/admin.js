@@ -278,6 +278,9 @@ async function loadUsers() {
   } catch (error) {
     console.error('❌ 加载用户列表失败:', error);
 
+    // 记录网络错误到本地日志
+    await logNetworkError('load_users', error, '加载用户列表失败');
+
     // 根据错误类型显示专业的错误信息
     let errorMessage = '网络连接失败';
     if (error.type === 'NETWORK_ERROR') {
@@ -468,6 +471,9 @@ document.getElementById('addUserBtn').onclick = async function() {
     console.error('添加用户失败:', error);
     msg.style.color = '#d32f2f';
 
+    // 记录网络错误到本地日志
+    await logNetworkError('add_user', error, `添加用户失败: ${username} (${role})`);
+
     // 根据错误类型显示专业的错误信息
     let errorMessage = '网络连接失败';
     if (error.type === 'NETWORK_ERROR') {
@@ -597,6 +603,9 @@ async function toggleUserStatus(username, currentStatus) {
     }
   } catch (error) {
     console.error(`${action}用户失败:`, error);
+
+    // 记录网络错误到本地日志
+    await logNetworkError('toggle_user_status', error, `${action}用户失败: ${username}`);
 
     // 根据错误类型显示专业的错误信息
     let errorMessage = '网络连接失败';
@@ -806,6 +815,9 @@ async function loadOnlineUsers() {
 
   } catch (error) {
     console.error('❌ 加载在线用户失败:', error);
+
+    // 记录网络错误到本地日志
+    await logNetworkError('load_online_users', error, '加载在线用户失败');
 
     // 根据错误类型显示专业的错误信息
     let errorMessage = '网络连接失败';
@@ -1264,7 +1276,7 @@ function bindEventListeners() {
   // 日志相关
   const refreshLogsBtn = document.getElementById('refreshLogsBtn');
   if (refreshLogsBtn) {
-    refreshLogsBtn.onclick = refreshLogsFromBackend;
+    refreshLogsBtn.onclick = refreshLogsFromLocal;
   }
 
   const exportLogsBtn = document.getElementById('exportLogsBtn');
@@ -1366,8 +1378,8 @@ async function loadLocalLogs() {
   }
 }
 
-// 从后端刷新日志
-async function refreshLogsFromBackend() {
+// 刷新本地日志文件
+async function refreshLogsFromLocal() {
   // 获取刷新按钮并设置加载状态
   const refreshBtn = document.getElementById('refreshLogsBtn');
 
@@ -1377,51 +1389,25 @@ async function refreshLogsFromBackend() {
   }
 
   try {
-    console.log('🔄 正在从后端获取新日志...');
+    console.log('🔄 正在重新加载本地日志文件...');
 
-    // 从后端API获取日志
-    const response = await window.api.getSystemLogs();
-    const backendLogs = response.data.logs || [];
+    // 重新加载本地logs.json文件
+    await loadLocalLogs();
 
-    console.log(`✅ 从后端获取到 ${backendLogs.length} 条日志`);
+    console.log(`✅ 重新加载完成，当前共 ${localLogs.length} 条日志`);
 
-    if (backendLogs.length > 0) {
-      // 保存新日志到本地
-      if (typeof window.api !== 'undefined' && window.api.saveLogsToLocal) {
-        const result = await window.api.saveLogsToLocal(backendLogs);
+    showToast(`成功刷新本地日志，当前共 ${localLogs.length} 条日志`, 'success');
 
-        if (result.success) {
-          console.log(`💾 ${result.message}`);
-          // 重新读取本地日志
-          await loadLocalLogs();
-          showToast(`成功从后端获取并保存了新日志，当前总计 ${result.totalLogs} 条日志`, 'success');
+    // 记录刷新日志操作
+    await logUserAction('refresh_local_logs', `刷新本地日志文件，当前共 ${localLogs.length} 条日志`, 'info');
 
-          // 记录刷新日志操作
-          await logUserAction('refresh_logs', `从后端刷新日志，获取 ${backendLogs.length} 条新日志`, 'info');
-        } else {
-          throw new Error(result.message);
-        }
-      } else {
-        // 如果不是Electron环境，直接显示后端日志
-        localLogs = backendLogs;
-        renderLocalLogs();
-        showToast(`从后端获取到 ${backendLogs.length} 条日志`, 'success');
-      }
-    } else {
-      showToast('后端没有新的日志数据', 'info');
-    }
   } catch (error) {
-    console.error('❌ 从后端刷新日志失败:', error);
+    console.error('❌ 刷新本地日志失败:', error);
 
-    // 根据错误类型显示专业的错误信息
-    let errorMessage = '网络连接失败';
-    if (error.type === 'NETWORK_ERROR') {
-      errorMessage = error.message;
-    } else if (error.message && !error.message.includes('is not a function')) {
-      errorMessage = error.message;
-    }
+    // 记录错误到本地日志
+    await logUserAction('refresh_local_logs_failed', `刷新本地日志失败: ${error.message}`, 'error');
 
-    showToast(errorMessage, 'error');
+    showToast('刷新本地日志失败，请检查日志文件是否存在', 'error');
   } finally {
     // 恢复按钮状态
     if (refreshBtn) {
@@ -1431,7 +1417,7 @@ async function refreshLogsFromBackend() {
   }
 }
 
-// 导出本地日志文件
+// 导出本地日志为美观的文本格式
 async function exportLogsToLocal() {
   try {
     console.log('📥 正在导出本地日志文件...');
@@ -1441,34 +1427,177 @@ async function exportLogsToLocal() {
       return;
     }
 
-    // 直接导出本地logs.json文件内容
-    if (typeof window.api !== 'undefined' && window.api.saveLogsToLocal) {
-      // Electron环境：保存到本地文件系统
-      const result = await window.api.saveLogsToLocal(localLogs);
+    // 生成美观的文本格式
+    const textContent = generateLogTextContent(localLogs);
+
+    if (typeof window.api !== 'undefined' && window.api.saveTextFile) {
+      // Electron环境：弹窗选择保存位置
+      const result = await window.api.saveTextFile(textContent, 'system_logs.txt');
 
       if (result.success) {
-        showToast(`成功导出 ${localLogs.length} 条本地日志到logs.json文件`, 'success');
+        showToast(`成功导出 ${localLogs.length} 条日志到 ${result.filePath}`, 'success');
       } else {
         throw new Error(result.message);
       }
     } else {
       // Web环境：创建下载链接
-      const dataStr = JSON.stringify(localLogs, null, 2);
-      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const dataBlob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(dataBlob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'logs.json';
+      link.download = 'system_logs.txt';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      showToast(`成功下载 ${localLogs.length} 条本地日志到logs.json文件`, 'success');
+      showToast(`成功下载 ${localLogs.length} 条日志到 system_logs.txt`, 'success');
     }
   } catch (error) {
     console.error('❌ 导出本地日志失败:', error);
     showToast('导出本地日志文件失败', 'error');
   }
+}
+
+// 生成美观的日志文本格式
+function generateLogTextContent(logs) {
+  const header = `
+================================================================================
+                              系统日志报告
+================================================================================
+导出时间: ${new Date().toLocaleString('zh-CN')}
+日志总数: ${logs.length} 条
+================================================================================
+
+`;
+
+  let content = header;
+
+  // 按时间分组日志
+  const logsByDate = {};
+  logs.forEach(log => {
+    const date = new Date(log.time).toLocaleDateString('zh-CN');
+    if (!logsByDate[date]) {
+      logsByDate[date] = [];
+    }
+    logsByDate[date].push(log);
+  });
+
+  // 按日期排序并生成内容
+  Object.keys(logsByDate).sort().forEach(date => {
+    content += `\n📅 ${date}\n`;
+    content += '─'.repeat(80) + '\n';
+
+    logsByDate[date].forEach((log, index) => {
+      const time = new Date(log.time).toLocaleTimeString('zh-CN');
+      const levelIcon = getLevelIcon(log.level);
+      const userInfo = log.user ? `[${log.user}${log.role ? `/${log.role}` : ''}]` : '[系统]';
+
+      content += `\n${index + 1}. ${levelIcon} ${time} ${userInfo}\n`;
+      content += `   操作: ${log.action}\n`;
+      content += `   详情: ${log.detail}\n`;
+
+      if (log.error) {
+        content += `   错误: ${log.error}\n`;
+      }
+
+      if (log.stack) {
+        content += `   堆栈: ${log.stack.substring(0, 200)}...\n`;
+      }
+
+      content += '\n';
+    });
+  });
+
+  // 添加统计信息
+  const stats = generateLogStats(logs);
+  content += '\n\n';
+  content += '================================================================================\n';
+  content += '                              统计信息\n';
+  content += '================================================================================\n';
+  content += stats;
+
+  content += '\n\n';
+  content += '================================================================================\n';
+  content += '                            报告生成完成\n';
+  content += '================================================================================\n';
+
+  return content;
+}
+
+// 获取日志级别图标
+function getLevelIcon(level) {
+  const icons = {
+    'error': '❌',
+    'warning': '⚠️',
+    'info': 'ℹ️',
+    'success': '✅',
+    'debug': '🔍'
+  };
+  return icons[level] || 'ℹ️';
+}
+
+// 生成日志统计信息
+function generateLogStats(logs) {
+  const stats = {
+    total: logs.length,
+    byLevel: {},
+    byUser: {},
+    byAction: {},
+    timeRange: {
+      start: null,
+      end: null
+    }
+  };
+
+  logs.forEach(log => {
+    // 按级别统计
+    stats.byLevel[log.level] = (stats.byLevel[log.level] || 0) + 1;
+
+    // 按用户统计
+    const user = log.user || '系统';
+    stats.byUser[user] = (stats.byUser[user] || 0) + 1;
+
+    // 按操作统计
+    stats.byAction[log.action] = (stats.byAction[log.action] || 0) + 1;
+
+    // 时间范围
+    const logTime = new Date(log.time);
+    if (!stats.timeRange.start || logTime < stats.timeRange.start) {
+      stats.timeRange.start = logTime;
+    }
+    if (!stats.timeRange.end || logTime > stats.timeRange.end) {
+      stats.timeRange.end = logTime;
+    }
+  });
+
+  let statsText = '';
+
+  // 基本统计
+  statsText += `总日志数: ${stats.total}\n`;
+  if (stats.timeRange.start && stats.timeRange.end) {
+    statsText += `时间范围: ${stats.timeRange.start.toLocaleString('zh-CN')} ~ ${stats.timeRange.end.toLocaleString('zh-CN')}\n\n`;
+  }
+
+  // 按级别统计
+  statsText += '按级别统计:\n';
+  Object.entries(stats.byLevel).sort((a, b) => b[1] - a[1]).forEach(([level, count]) => {
+    const icon = getLevelIcon(level);
+    statsText += `  ${icon} ${level}: ${count} 条\n`;
+  });
+
+  // 按用户统计（前10名）
+  statsText += '\n按用户统计 (前10名):\n';
+  Object.entries(stats.byUser).sort((a, b) => b[1] - a[1]).slice(0, 10).forEach(([user, count]) => {
+    statsText += `  👤 ${user}: ${count} 条\n`;
+  });
+
+  // 按操作统计（前10名）
+  statsText += '\n按操作统计 (前10名):\n';
+  Object.entries(stats.byAction).sort((a, b) => b[1] - a[1]).slice(0, 10).forEach(([action, count]) => {
+    statsText += `  🔧 ${action}: ${count} 条\n`;
+  });
+
+  return statsText;
 }
 
 // 删除本地日志文件（通过事件监听器调用）
@@ -1617,5 +1746,33 @@ async function getCurrentUserSafely() {
   } catch (error) {
     console.warn('⚠️ 获取当前用户失败:', error);
     return null;
+  }
+}
+
+// 记录网络错误到本地日志
+async function logNetworkError(action, error, detail = '') {
+  try {
+    const currentUser = await getCurrentUserSafely();
+    const logData = {
+      time: new Date().toISOString(),
+      user: currentUser?.username || 'Unknown',
+      action: `network_error_${action}`,
+      level: 'error',
+      detail: `网络错误: ${detail || action}`,
+      role: currentUser?.role || null,
+      error: error.message || '网络连接失败',
+      stack: error.stack || null
+    };
+
+    console.log('📝 记录网络错误到本地日志:', logData);
+
+    // 只记录到本地日志（因为网络有问题，无法发送到后端）
+    if (window.api && window.api.addLog) {
+      await window.api.addLog(logData);
+      console.log('✅ 网络错误已记录到本地日志');
+    }
+  } catch (logError) {
+    console.warn('⚠️ 记录网络错误日志失败:', logError);
+    // 不抛出错误，避免影响主要功能
   }
 }

@@ -1,5 +1,21 @@
 /* 监控人员页面专用样式 */
 
+/* 疲劳等级徽章样式 */
+.fatigue-level-high {
+  background-color: #dc3545 !important;
+  color: white !important;
+}
+
+.fatigue-level-medium {
+  background-color: #fd7e14 !important;
+  color: white !important;
+}
+
+.fatigue-level-low {
+  background-color: #28a745 !important;
+  color: white !important;
+}
+
 /* 用户监控表格行样式 */
 .user-monitor-row {
   transition: background-color 0.3s ease;

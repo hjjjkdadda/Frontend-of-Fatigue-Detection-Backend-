@@ -714,6 +714,7 @@ if (isElectron && typeof window.api !== 'undefined') {
     getLocalLogs: window.api.getLocalLogs,
     addLog: window.api.addLog,
     saveLogsToLocal: window.api.saveLogsToLocal,
+    saveTextFile: window.api.saveTextFile,
     deleteLocalLogsFile: window.api.deleteLocalLogsFile,
     // 导航
     navigate: window.api.navigate
@@ -902,6 +903,13 @@ window.api = {
       return electronApi.saveLogsToLocal(logs);
     }
     return Promise.reject(createApiError('SERVICE_UNAVAILABLE', new Error('本地日志保存功能仅在Electron环境中可用')));
+  },
+
+  saveTextFile: (content, defaultFileName) => {
+    if (electronApi && electronApi.saveTextFile) {
+      return electronApi.saveTextFile(content, defaultFileName);
+    }
+    return Promise.reject(createApiError('SERVICE_UNAVAILABLE', new Error('文本文件保存功能仅在Electron环境中可用')));
   },
 
   deleteLocalLogsFile: () => {

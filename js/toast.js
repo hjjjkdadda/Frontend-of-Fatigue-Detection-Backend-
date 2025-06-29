@@ -29,7 +29,7 @@ if (!window.ToastManager) {
       
       // 创建toast元素
       const toast = document.createElement('div');
-      const toastId = 'toast-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+      const toastId = 'toast-' + Date.now() + '-' + Math.random().toString(36).substring(2, 11);
       toast.id = toastId;
 
       // 根据类型设置样式
@@ -89,32 +89,21 @@ if (!window.ToastManager) {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       `;
 
-      // 创建关闭函数
-      const closeToast = () => {
-        if (toast.parentNode) {
-          toast.style.transform = 'translateX(100%)';
-          setTimeout(() => {
-            if (toast.parentNode) {
-              toast.remove();
-            }
-          }, 400);
-        }
-      };
-
+      // 创建Toast内容
       toast.innerHTML = `
         <i class="fa ${style.icon}" style="
-          margin-right: 12px; 
+          margin-right: 12px;
           font-size: 18px;
           opacity: 0.9;
           flex-shrink: 0;
         "></i>
         <span style="
-          flex: 1; 
+          flex: 1;
           line-height: 1.4;
           word-break: break-word;
           margin-right: 8px;
         ">${message}</span>
-        <button type="button" style="
+        <button type="button" class="toast-close-btn" style="
           background: rgba(255, 255, 255, 0.2);
           border: none;
           color: ${style.text};
@@ -131,11 +120,32 @@ if (!window.ToastManager) {
           font-weight: bold;
           line-height: 1;
           flex-shrink: 0;
-        " 
-        onmouseover="this.style.background='rgba(255,255,255,0.3)'; this.style.transform='scale(1.1)'"
-        onmouseout="this.style.background='rgba(255,255,255,0.2)'; this.style.transform='scale(1)'"
-        onclick="(${closeToast.toString()})()">×</button>
+        ">×</button>
       `;
+
+      // 添加关闭按钮事件监听器
+      const closeBtn = toast.querySelector('.toast-close-btn');
+      closeBtn.addEventListener('click', () => {
+        if (toast.parentNode) {
+          toast.style.transform = 'translateX(100%)';
+          setTimeout(() => {
+            if (toast.parentNode) {
+              toast.remove();
+            }
+          }, 400);
+        }
+      });
+
+      // 添加悬停效果
+      closeBtn.addEventListener('mouseover', () => {
+        closeBtn.style.background = 'rgba(255,255,255,0.3)';
+        closeBtn.style.transform = 'scale(1.1)';
+      });
+
+      closeBtn.addEventListener('mouseout', () => {
+        closeBtn.style.background = 'rgba(255,255,255,0.2)';
+        closeBtn.style.transform = 'scale(1)';
+      });
 
       // 添加微妙的光泽效果
       const shimmer = document.createElement('div');
@@ -173,7 +183,16 @@ if (!window.ToastManager) {
 
       // 自动隐藏
       if (duration > 0) {
-        setTimeout(closeToast, duration);
+        setTimeout(() => {
+          if (toast.parentNode) {
+            toast.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+              if (toast.parentNode) {
+                toast.remove();
+              }
+            }, 400);
+          }
+        }, duration);
       }
 
       return toast;

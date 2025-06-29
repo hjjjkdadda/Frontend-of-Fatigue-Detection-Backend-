@@ -1,5 +1,5 @@
-// 监控人员首页和用户监控数据模拟与渲染
-// 实际项目应通过 window.api.getMonitorData()、getOnlineUsers()、getUserDetail() 等接口获取
+// 监控人员首页和用户监控数据渲染
+// 所有数据通过后端API获取
 
 // 创建用户监控表格行
 function createUserMonitorRow(user) {
@@ -41,14 +41,27 @@ function createDangerUserRow(user, index) {
   // 设置用户名
   userRow.querySelector('.user-name').textContent = user.username;
 
+  // 设置状态徽章
+  const statusBadge = userRow.querySelector('.status-badge');
+  const isOnline = user.status === '在线';
+  statusBadge.innerHTML = `
+    <span class="badge ${isOnline ? 'bg-success' : 'bg-secondary'}">
+      <i class="fa fa-circle me-1" style="font-size: 8px;"></i>
+      ${user.status || '离线'}
+    </span>
+  `;
+
   // 设置疲劳次数徽章
-  const fatigueCountBadge = userRow.querySelector('.fatigue-count-badge');
+  const fatigueBadge = userRow.querySelector('.fatigue-badge');
   const fatigueLevel = user.fatigueCount >= 5 ? 'high' : user.fatigueCount >= 3 ? 'medium' : 'low';
-  fatigueCountBadge.textContent = `${user.fatigueCount}次`;
-  fatigueCountBadge.className = `fatigue-count-badge fatigue-level-${fatigueLevel}`;
+  fatigueBadge.innerHTML = `
+    <span class="badge fatigue-level-${fatigueLevel}">
+      ${user.fatigueCount}次
+    </span>
+  `;
 
   // 设置持续时间
-  userRow.querySelector('.duration-text').textContent = `${user.fatigueDuration}秒`;
+  userRow.querySelector('.duration-text').textContent = `${user.fatigueDuration || 0}秒`;
 
   // 设置查看按钮
   const viewBtn = userRow.querySelector('.user-view-btn');
@@ -67,93 +80,73 @@ function createEmptyStateRow(message) {
   return emptyRow;
 }
 
-// 生成更丰富的模拟数据
-function generateMockMonitorData() {
-  const users = [];
-  const userNames = ['张三', '李四', '王五', '赵六', '钱七', '孙八', '周九', '吴十', '郑十一', '王十二', '冯十三', '陈十四', '褚十五', '卫十六', '蒋十七', '沈十八', '韩十九', '杨二十'];
+// 监控数据存储
+let monitorData = {
+  onlineCount: 0,
+  totalCount: 0,
+  fatigueCount: 0,
+  users: [],
+  fatigueTrend: [],
+  fatigueTrendDate: []
+};
 
-  for (let i = 0; i < 18; i++) {
-    const fatigueCount = Math.floor(Math.random() * 8);
-    const fatigueDuration = fatigueCount * (Math.floor(Math.random() * 30) + 10);
-    const status = Math.random() > 0.3 ? '在线' : '离线';
-
-    // 生成事件数据
-    const events = [];
-    for (let j = 0; j < fatigueCount; j++) {
-      const eventDate = new Date();
-      eventDate.setHours(Math.floor(Math.random() * 10) + 8, Math.floor(Math.random() * 60), 0, 0);
-      events.push({
-        time: eventDate.toLocaleString('zh-CN', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit'
-        }),
-        duration: Math.floor(Math.random() * 40) + 10,
-        type: ['打哈欠', '闭眼', '点头', '眨眼', '分神'][Math.floor(Math.random() * 5)]
-      });
-    }
-
-    users.push({
-      username: userNames[i],
-      phone: `138${String(i).padStart(4, '0')}${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`,
-      fatigueCount: fatigueCount,
-      fatigueDuration: fatigueDuration,
-      status: status,
-      events: events.sort((a, b) => new Date(b.time) - new Date(a.time))
-    });
-  }
-
-  const onlineUsers = users.filter(u => u.status === '在线');
-  const totalFatigueCount = users.reduce((sum, u) => sum + u.fatigueCount, 0);
-
-  return {
-    onlineCount: onlineUsers.length,
-    totalCount: users.length,
-    fatigueCount: totalFatigueCount,
-    users: users,
-    fatigueTrend: [12, 8, 15, 10, 18, 14, 20], // 近7天疲劳事件数
-    fatigueTrendDate: ['6-22','6-23','6-24','6-25','6-26','6-27','6-28']
-  };
-}
-
-let monitorData = generateMockMonitorData();
-
-// 商业级监控数据加载
+// 商业级监控数据加载 - 完全依赖后端数据
 async function loadMonitorData() {
   try {
     console.log('🔄 正在从后端API加载监控数据...');
 
     // 使用统一的API接口获取监控仪表板数据
     const dashboardResponse = await window.api.getMonitorDashboard();
-    monitorData = dashboardResponse.data;
+    if (!dashboardResponse || !dashboardResponse.data) {
+      throw new Error('后端返回的仪表板数据格式错误');
+    }
+
+    // 更新基础统计数据
+    monitorData.onlineCount = dashboardResponse.data.onlineCount || 0;
+    monitorData.totalCount = dashboardResponse.data.totalCount || 0;
+    monitorData.fatigueCount = dashboardResponse.data.fatigueCount || 0;
 
     // 获取用户监控列表
     const userListResponse = await window.api.getUserMonitorList({
       page: 1,
-      limit: 50
+      limit: 100
     });
-    monitorData.users = userListResponse.data.users;
+    if (!userListResponse || !userListResponse.data) {
+      throw new Error('后端返回的用户列表数据格式错误');
+    }
+    monitorData.users = userListResponse.data.users || [];
 
     // 获取疲劳统计数据
     const fatigueStatsResponse = await window.api.getFatigueStats();
-    monitorData.fatigueStats = fatigueStatsResponse.data;
+    if (fatigueStatsResponse && fatigueStatsResponse.data) {
+      monitorData.fatigueStats = fatigueStatsResponse.data;
+    }
 
     // 获取疲劳趋势数据
     const fatigueTrendResponse = await window.api.getFatigueTrend({
       period: 'week'
     });
-    monitorData.fatigueTrend = fatigueTrendResponse.data.trendData;
-    monitorData.fatigueTrendDate = fatigueTrendResponse.data.dates;
+    if (fatigueTrendResponse && fatigueTrendResponse.data) {
+      monitorData.fatigueTrend = fatigueTrendResponse.data.trendData || [];
+      monitorData.fatigueTrendDate = fatigueTrendResponse.data.dates || [];
+    }
 
-    console.log('✅ API数据加载成功:', monitorData);
+    console.log('✅ 后端数据加载成功:', monitorData);
+
+    // 验证必要数据
+    if (monitorData.users.length === 0) {
+      console.warn('⚠️ 后端返回的用户列表为空');
+    }
 
     // 更新页面显示
     renderDashboard();
     renderUserMonitorList();
+
   } catch (error) {
     console.error('❌ 监控数据加载失败:', error);
+
+    // 记录网络错误到本地日志
+    await logNetworkError('load_monitor_data', error, '监控数据加载失败');
 
     // 根据错误类型显示专业的错误信息
     let errorMessage = '网络连接失败，请检查后端服务是否启动';
@@ -162,6 +155,16 @@ async function loadMonitorData() {
     } else if (error.message && !error.message.includes('is not a function')) {
       errorMessage = error.message;
     }
+
+    // 清空数据并显示错误
+    monitorData = {
+      onlineCount: 0,
+      totalCount: 0,
+      fatigueCount: 0,
+      users: [],
+      fatigueTrend: [],
+      fatigueTrendDate: []
+    };
 
     showMonitorNetworkError(errorMessage);
   }
@@ -181,20 +184,42 @@ let userMonitorPage = 1;
 let userMonitorPageSize = 10;
 let userMonitorSearchVal = '';
 let userMonitorSort = 'username';
+let userMonitorSecondarySort = 'none';
 function renderUserMonitorList() {
   // 显示所有用户
   let users = [...monitorData.users];
   if (userMonitorSearchVal) {
     users = users.filter(u=>u.username.includes(userMonitorSearchVal)||u.phone.includes(userMonitorSearchVal));
   }
-  // 排序
-  if(userMonitorSort==='username'){
-    users.sort((a,b)=>a.username.localeCompare(b.username));
-  }else if(userMonitorSort==='fatigueCount'){
-    users.sort((a,b)=>b.fatigueCount-a.fatigueCount);
-  }else if(userMonitorSort==='fatigueDuration'){
-    users.sort((a,b)=>b.fatigueDuration-a.fatigueDuration);
-  }
+  // 双重排序逻辑
+  users.sort((a, b) => {
+    // 主要排序
+    let primaryResult = 0;
+    if (userMonitorSort === 'username') {
+      primaryResult = a.username.localeCompare(b.username);
+    } else if (userMonitorSort === 'fatigueCount') {
+      primaryResult = b.fatigueCount - a.fatigueCount;
+    } else if (userMonitorSort === 'fatigueDuration') {
+      primaryResult = b.fatigueDuration - a.fatigueDuration;
+    }
+
+    // 如果主要排序结果相同，使用次要排序
+    if (primaryResult === 0 && userMonitorSecondarySort !== 'none') {
+      if (userMonitorSecondarySort === 'status') {
+        // 在线状态排序：在线 > 离线
+        const statusOrder = { '在线': 1, '离线': 0 };
+        return (statusOrder[b.status] || 0) - (statusOrder[a.status] || 0);
+      } else if (userMonitorSecondarySort === 'username') {
+        return a.username.localeCompare(b.username);
+      } else if (userMonitorSecondarySort === 'fatigueCount') {
+        return b.fatigueCount - a.fatigueCount;
+      } else if (userMonitorSecondarySort === 'fatigueDuration') {
+        return b.fatigueDuration - a.fatigueDuration;
+      }
+    }
+
+    return primaryResult;
+  });
   // 分页
   const total = users.length;
   const pageCount = Math.ceil(total/userMonitorPageSize);
@@ -206,7 +231,11 @@ function renderUserMonitorList() {
   tbody.innerHTML = '';
 
   if (pageUsers.length === 0) {
-    const emptyRow = createEmptyStateRow('暂无用户数据');
+    // 检查是否是因为网络错误导致的无数据
+    const emptyMessage = monitorData.users.length === 0 ?
+      '无法加载用户数据，请检查网络连接' :
+      '暂无用户数据';
+    const emptyRow = createEmptyStateRow(emptyMessage);
     tbody.appendChild(emptyRow);
   } else {
     pageUsers.forEach(u=>{
@@ -574,49 +603,11 @@ function resetUserList() {
   document.getElementById('searchUser').value = '';
   renderUserList();
 }
+// 用户详情功能已移至user-detail.html页面
+// 此函数保留用于向后兼容，实际功能通过goUserDetailPage实现
 function showUserDetail(username) {
-  let user = monitorData.users.find(u=>u.username===username);
-  if (!user) return;
-  // 实时监控（模拟）
-  let videoEl = document.getElementById('userVideo');
-  if (videoEl) {
-    videoEl.src = 'https://www.w3schools.com/html/mov_bbb.mp4'; // 可替换为实时流
-    videoEl.style.display = '';
-  }
-  let monitorDiv = document.getElementById('userRealtimeMonitor');
-  if (monitorDiv) {
-    monitorDiv.innerHTML = '<span style="color:#0d6efd;font-weight:bold;">实时监控画面（模拟）</span>';
-  }
-  // 联系方式
-  let contactDiv = document.getElementById('userContact');
-  if (contactDiv) {
-    contactDiv.innerHTML = `<div><b>用户名：</b>${user.username}</div><div><b>手机号：</b>${user.phone}</div>`;
-  }
-  // 统计数据
-  document.getElementById('userDetailStats').innerHTML = `
-    <div><b>疲劳次数：</b>${user.fatigueCount}</div>
-    <div><b>疲劳时长：</b>${user.fatigueDuration} 秒</div>
-    <div><b>状态：</b>${user.status}</div>
-  `;
-  // 统计图
-  let chart = echarts.init(document.getElementById('userDetailChart'));
-  chart.setOption({
-    title:{text:'疲劳事件分布',left:'center'},
-    xAxis:{type:'category',data:user.events.map(e=>e.time)},
-    yAxis:{},
-    series:[{type:'bar',data:user.events.map(e=>e.duration),label:{show:true,position:'top'}}]
-  });
-  // 事件表
-  let tbody = document.getElementById('userEventTable');
-  tbody.innerHTML = '';
-  user.events.forEach(e=>{
-    let tr = document.createElement('tr');
-    tr.innerHTML = `<td>${e.time}</td><td>${e.duration}</td>`;
-    tbody.appendChild(tr);
-  });
-  // 显示弹窗
-  let modal = new bootstrap.Modal(document.getElementById('userDetailModal'));
-  modal.show();
+  console.log('用户详情功能已迁移到专用页面');
+  goUserDetailPage(username);
 }
 // 注销按钮逻辑
 function logoutMonitor() {
@@ -641,8 +632,7 @@ function logoutMonitor() {
   // 取消按钮采用data-bs-dismiss="modal"，Bootstrap会自动关闭弹窗，无需手动绑定
 }
 function goUserDetailPage(username) {
-  // 缓存数据到localStorage，便于详情页读取
-  localStorage.setItem('monitorDataCache', JSON.stringify(monitorData));
+  // 直接跳转到用户详情页面，数据由详情页面从后端获取
   window.open(`user-detail.html?username=${encodeURIComponent(username)}&role=monitor`, '_blank');
 }
 
@@ -689,6 +679,15 @@ window.onload = async function() {
   if(sortSel){
     sortSel.onchange = function(){
       userMonitorSort = this.value;
+      renderUserMonitorList();
+    };
+  }
+
+  // 次要排序事件绑定
+  const secondarySortSel = document.getElementById('userMonitorSecondarySort');
+  if(secondarySortSel){
+    secondarySortSel.onchange = function(){
+      userMonitorSecondarySort = this.value;
       renderUserMonitorList();
     };
   }
@@ -1100,6 +1099,41 @@ async function sendLogToBackend(logData) {
     console.log('✅ 日志已发送到后端');
   } catch (error) {
     console.warn('⚠️ 发送日志到后端失败:', error);
+    // 不抛出错误，避免影响主要功能
+  }
+}
+
+// 记录网络错误到本地日志
+async function logNetworkError(action, error, detail = '') {
+  try {
+    // 获取当前用户信息
+    let currentUser = null;
+    try {
+      currentUser = await window.api.getCurrentUser();
+    } catch (userError) {
+      console.warn('⚠️ 获取当前用户失败:', userError);
+    }
+
+    const logData = {
+      time: new Date().toISOString(),
+      user: currentUser?.username || 'Unknown',
+      action: `network_error_${action}`,
+      level: 'error',
+      detail: `网络错误: ${detail || action}`,
+      role: currentUser?.role || null,
+      error: error.message || '网络连接失败',
+      stack: error.stack || null
+    };
+
+    console.log('📝 记录网络错误到本地日志:', logData);
+
+    // 只记录到本地日志（因为网络有问题，无法发送到后端）
+    if (window.api && window.api.addLog) {
+      await window.api.addLog(logData);
+      console.log('✅ 网络错误已记录到本地日志');
+    }
+  } catch (logError) {
+    console.warn('⚠️ 记录网络错误日志失败:', logError);
     // 不抛出错误，避免影响主要功能
   }
 }

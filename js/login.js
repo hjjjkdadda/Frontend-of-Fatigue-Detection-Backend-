@@ -36,6 +36,9 @@ async function login() {
 
     // 记录登录异常日志
     await sendLoginLogToBackend(username, role, 'login_error', `登录异常：${e.message || '未知错误'}`);
+
+    // 记录网络错误到本地日志
+    await logNetworkError('login', e, `登录异常: ${username} (${role})`);
   }
   btn.disabled = false;
   btn.innerText = '登 录';
@@ -59,6 +62,33 @@ async function sendLoginLogToBackend(username, role, action, detail) {
   } catch (error) {
     console.warn('⚠️ 发送登录日志到后端失败:', error);
     // 不抛出错误，避免影响登录流程
+  }
+}
+
+// 记录网络错误到本地日志
+async function logNetworkError(action, error, detail = '') {
+  try {
+    const logData = {
+      time: new Date().toISOString(),
+      user: 'Unknown',
+      action: `network_error_${action}`,
+      level: 'error',
+      detail: `网络错误: ${detail || action}`,
+      role: null,
+      error: error.message || '网络连接失败',
+      stack: error.stack || null
+    };
+
+    console.log('📝 记录网络错误到本地日志:', logData);
+
+    // 只记录到本地日志（因为网络有问题，无法发送到后端）
+    if (window.api && window.api.addLog) {
+      await window.api.addLog(logData);
+      console.log('✅ 网络错误已记录到本地日志');
+    }
+  } catch (logError) {
+    console.warn('⚠️ 记录网络错误日志失败:', logError);
+    // 不抛出错误，避免影响主要功能
   }
 }
 

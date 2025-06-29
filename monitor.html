@@ -66,8 +66,17 @@
         <button id="exportAllReportBtn" class="btn btn-success btn-sm me-3">
           <i class="fa fa-file-excel-o me-2"></i>导出总体疲劳报告
         </button>
-        <span class="ms-auto">排序方式
-          <select id="userMonitorSort" class="form-select d-inline-block" style="width:120px;display:inline-block;">
+        <span class="ms-auto d-flex align-items-center gap-2">
+          <span>主要排序</span>
+          <select id="userMonitorSort" class="form-select d-inline-block" style="width:120px;">
+            <option value="username">用户名</option>
+            <option value="fatigueCount">疲劳次数</option>
+            <option value="fatigueDuration">疲劳时长</option>
+          </select>
+          <span>次要排序</span>
+          <select id="userMonitorSecondarySort" class="form-select d-inline-block" style="width:120px;">
+            <option value="none">无</option>
+            <option value="status">在线状态</option>
             <option value="username">用户名</option>
             <option value="fatigueCount">疲劳次数</option>
             <option value="fatigueDuration">疲劳时长</option>
@@ -86,6 +95,7 @@
           <thead>
             <tr>
               <th><i class="fa fa-user"></i> 用户名</th>
+              <th><i class="fa fa-circle"></i> 状态</th>
               <th><i class="fa fa-exclamation-circle"></i> 疲劳次数</th>
               <th><i class="fa fa-clock-o"></i> 疲劳时长</th>
               <th style="width:70px;text-align:center;"><i class="fa fa-cogs"></i> 操作</th>
@@ -123,6 +133,9 @@
           <i class="fa fa-user user-icon"></i>
           <strong class="user-name"></strong>
         </div>
+      </td>
+      <td>
+        <span class="status-badge"></span>
       </td>
       <td>
         <span class="fatigue-badge"></span>
