@@ -170,14 +170,14 @@
         <!-- 日志操作控件 -->
         <div class="d-flex mb-3 align-items-center justify-content-between" style="gap:12px;">
           <div class="d-flex align-items-center" style="gap:12px;">
-            <button class="btn btn-sm btn-primary" onclick="refreshLogsFromBackend()">
+            <button class="btn btn-sm btn-primary"style="width:100px" onclick="refreshLogsFromBackend()">
               <i class="fa fa-refresh"></i> 刷新
             </button>
-            <button class="btn btn-sm btn-success" onclick="exportLogsToLocal()">
-              <i class="fa fa-download"></i> 导出到本地
+            <button class="btn btn-sm btn-success"style="width:100px" onclick="exportLogsToLocal()">
+              <i class="fa fa-download"></i> 导出日志
             </button>
-            <button class="btn btn-sm btn-danger" onclick="deleteLocalLogs()">
-              <i class="fa fa-trash"></i> 删除本地日志
+            <button class="btn btn-sm btn-danger"style="width:100px" onclick="deleteLocalLogs()">
+              <i class="fa fa-trash"></i> 删除日志
             </button>
           </div>
         </div>
@@ -218,7 +218,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-danger" onclick="confirmDeleteLocalLogs()">
-            <i class="fa fa-trash"></i> 删除本地日志
+            <i class="fa fa-trash" ></i> 删除本地日志
           </button>
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
         </div>
@@ -282,10 +282,16 @@
       <div class="log-header">
         <div class="log-icon"></div>
         <div class="log-content">
-          <div>
-            <strong class="log-user"></strong>
-            <span class="log-action"></span>
-            <span class="log-role-badge"></span>
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <span class="log-level-badge"></span>
+              <strong class="log-user"></strong>
+              <span class="log-action"></span>
+              <span class="log-role-badge"></span>
+            </div>
+            <button class="btn btn-sm btn-outline-primary log-download-btn" style="width:69px;font-size:12px;" title="下载日志">
+              <i class="fa fa-download"></i> 下载
+            </button>
           </div>
           <small class="log-time"></small>
         </div>

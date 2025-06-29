@@ -445,3 +445,124 @@ body { background: #f7f9fa; }
   font-weight: 600;
 }
 
+/* ==================== 日志详情美化样式 ==================== */
+
+/* 日志详情区域 */
+.log-detail {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border-left: 4px solid #e9ecef;
+  font-size: 13px;
+}
+
+/* 日志详情段落 */
+.log-detail-section {
+  margin-bottom: 10px;
+}
+
+.log-detail-section:last-child {
+  margin-bottom: 0;
+}
+
+/* 日志详情标签 */
+.log-detail-label {
+  font-weight: 600;
+  color: #495057;
+  margin-right: 8px;
+  display: inline-block;
+  min-width: 80px;
+}
+
+/* 日志详情内容 */
+.log-detail-content {
+  color: #6c757d;
+}
+
+/* 错误信息区域 */
+.log-error-section {
+  background: #fff5f5;
+  border-left-color: #dc3545;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-top: 8px;
+}
+
+.log-error-section .log-detail-label {
+  color: #dc3545;
+  font-weight: 700;
+}
+
+.log-error-content {
+  margin-top: 6px;
+}
+
+.log-error-message {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  display: block;
+  border: 1px solid #f5c6cb;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
+/* 堆栈跟踪区域 */
+.log-stack-section {
+  background: #fff8e1;
+  border-left-color: #ff9800;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-top: 8px;
+}
+
+.log-stack-section .log-detail-label {
+  color: #f57c00;
+  font-weight: 700;
+}
+
+.log-stack-toggle {
+  margin-top: 6px;
+}
+
+.log-stack-content {
+  background: #2d3748;
+  border-radius: 4px;
+  padding: 12px;
+  overflow-x: auto;
+}
+
+.log-stack-trace {
+  margin: 0;
+  color: #e2e8f0;
+  font-size: 11px;
+  line-height: 1.4;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* 日志级别徽章增强 */
+.log-level-badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* 下载按钮样式优化 */
+.log-download-btn {
+  border-radius: 4px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.log-download-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,123,255,0.3);
+}
+

@@ -71,8 +71,31 @@ function createLogItem(log) {
   logItem.querySelector('.log-time').textContent = new Date(log.time).toLocaleString();
 
   // 设置角色徽章
+  // 设置日志级别徽章
+  const levelBadge = logItem.querySelector('.log-level-badge');
+  const logLevel = log.level || 'info';
+  levelBadge.textContent = getLevelText(logLevel);
+  levelBadge.className = 'badge me-2';
+
+  // 设置日志级别对应的颜色样式
+  if (logLevel === 'error') {
+    levelBadge.style.backgroundColor = '#d32f2f';
+    levelBadge.style.color = '#fff';
+  } else if (logLevel === 'warning') {
+    levelBadge.style.backgroundColor = '#f57c00';
+    levelBadge.style.color = '#fff';
+  } else if (logLevel === 'info') {
+    levelBadge.style.backgroundColor = '#1976d2';
+    levelBadge.style.color = '#fff';
+  } else if (logLevel === 'success') {
+    levelBadge.style.backgroundColor = '#388e3c';
+    levelBadge.style.color = '#fff';
+  }
+  levelBadge.style.fontWeight = 'bold';
+
+  // 角色徽章显示（只对用户操作日志显示）
   const roleBadge = logItem.querySelector('.log-role-badge');
-  if (log.role) {
+  if (log.role && log.user !== 'System') {
     const roleText = getRoleText(log.role);
     roleBadge.textContent = roleText;
     roleBadge.className = 'badge ms-2';
@@ -89,14 +112,25 @@ function createLogItem(log) {
       roleBadge.style.color = '#23272e';
     }
     roleBadge.style.fontWeight = 'bold';
+    roleBadge.style.display = 'inline-block';
   } else {
     roleBadge.style.display = 'none';
   }
 
-  // 设置详情
+  // 设置下载按钮（仅对系统日志的error和warning级别显示）
+  const downloadBtn = logItem.querySelector('.log-download-btn');
+  if (log.user === 'System' && (logLevel === 'error' || logLevel === 'warning')) {
+    downloadBtn.style.display = 'inline-block';
+    downloadBtn.onclick = () => downloadLogItem(log);
+  } else {
+    downloadBtn.style.display = 'none';
+  }
+
+  // 设置详情（美化显示）
   const detail = logItem.querySelector('.log-detail');
-  if (log.detail) {
-    detail.textContent = `详情: ${formatLogDetail(log.detail)}`;
+  if (log.detail || log.error || log.stack) {
+    detail.innerHTML = formatLogDetailHtml(log);
+    detail.style.display = 'block';
   } else {
     detail.style.display = 'none';
   }
@@ -403,12 +437,109 @@ function getRoleText(role) {
   return roleTexts[role] || role;
 }
 
+function getLevelText(level) {
+  const levelTexts = {
+    'info': '信息',
+    'success': '成功',
+    'warning': '警告',
+    'error': '错误'
+  };
+  return levelTexts[level] || level;
+}
+
+function formatSessionDuration(seconds) {
+  if (seconds < 60) {
+    return `${seconds}秒`;
+  } else if (seconds < 3600) {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return remainingSeconds > 0 ? `${minutes}分${remainingSeconds}秒` : `${minutes}分钟`;
+  } else {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    return minutes > 0 ? `${hours}小时${minutes}分钟` : `${hours}小时`;
+  }
+}
+
 function formatLogDetail(detail) {
   if (typeof detail === 'string') return detail;
   if (typeof detail === 'object') {
     return Object.entries(detail).map(([key, value]) => `${key}: ${value}`).join(', ');
   }
   return JSON.stringify(detail);
+}
+
+// 美化的日志详情HTML格式化
+function formatLogDetailHtml(log) {
+  let html = '';
+
+  // 判断是系统日志还是用户日志
+  const isSystemLog = log.user === 'System';
+
+  if (isSystemLog) {
+    // 系统日志：显示详情、错误信息、堆栈跟踪
+
+    // 基本详情
+    if (log.detail) {
+      html += `<div class="log-detail-section">
+        <span class="log-detail-label">详情:</span>
+        <span class="log-detail-content">${formatLogDetail(log.detail)}</span>
+      </div>`;
+    }
+
+    // 错误信息（美化显示）
+    if (log.error) {
+      html += `<div class="log-detail-section log-error-section">
+        <span class="log-detail-label">
+          <i class="fa fa-exclamation-triangle text-danger"></i> 错误信息:
+        </span>
+        <div class="log-error-content">
+          <code class="log-error-message">${log.error}</code>
+        </div>
+      </div>`;
+    }
+
+    // 堆栈跟踪（折叠显示）
+    if (log.stack) {
+      const stackId = `stack-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+      html += `<div class="log-detail-section log-stack-section">
+        <span class="log-detail-label">
+          <i class="fa fa-code text-warning"></i> 堆栈跟踪:
+        </span>
+        <div class="log-stack-toggle">
+          <button class="btn btn-sm btn-outline-secondary" type="button"
+                  data-bs-toggle="collapse" data-bs-target="#${stackId}"
+                  aria-expanded="false" style="font-size:11px;padding:2px 8px;">
+            <i class="fa fa-chevron-down"></i> 展开详情
+          </button>
+        </div>
+        <div class="collapse mt-2" id="${stackId}">
+          <div class="log-stack-content">
+            <pre class="log-stack-trace"><code>${log.stack}</code></pre>
+          </div>
+        </div>
+      </div>`;
+    }
+  } else {
+    // 用户日志：显示会话时长等用户相关信息
+
+    if (log.sessionDuration !== undefined) {
+      const duration = formatSessionDuration(log.sessionDuration);
+      html += `<div class="log-detail-section">
+        <span class="log-detail-label">会话时长:</span>
+        <span class="log-detail-content">${duration}</span>
+      </div>`;
+    }
+
+    if (log.detail) {
+      html += `<div class="log-detail-section">
+        <span class="log-detail-label">详情:</span>
+        <span class="log-detail-content">${formatLogDetail(log.detail)}</span>
+      </div>`;
+    }
+  }
+
+  return html;
 }
 
 // ================== 在线用户面板逻辑 ==================
@@ -894,6 +1025,38 @@ async function confirmDeleteLocalLogs() {
   } catch (error) {
     console.error('❌ 删除本地日志文件失败:', error);
     alert('删除失败，请稍后重试');
+  }
+}
+
+// 下载单个日志项
+function downloadLogItem(log) {
+  try {
+    const logData = {
+      时间: new Date(log.time).toLocaleString(),
+      用户: log.user || '系统',
+      操作: getActionText(log.action),
+      级别: getLevelText(log.level || 'info'),
+      角色: log.role ? getRoleText(log.role) : '无',
+      详情: log.detail ? formatLogDetail(log.detail) : '无',
+      错误信息: log.error || '无',
+      堆栈跟踪: log.stack || '无'
+    };
+
+    const dataStr = JSON.stringify(logData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `日志_${log.level}_${new Date(log.time).toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    console.log(`✅ 日志项下载成功: ${log.level} - ${log.action}`);
+  } catch (error) {
+    console.error('❌ 下载日志项失败:', error);
+    alert('下载失败，请稍后重试');
   }
 }
 
