@@ -205,16 +205,16 @@ function renderUserMonitorList() {
 
     // 如果主要排序结果相同，使用次要排序
     if (primaryResult === 0 && userMonitorSecondarySort !== 'none') {
-      if (userMonitorSecondarySort === 'status') {
-        // 在线状态排序：在线 > 离线
-        const statusOrder = { '在线': 1, '离线': 0 };
-        return (statusOrder[b.status] || 0) - (statusOrder[a.status] || 0);
-      } else if (userMonitorSecondarySort === 'username') {
-        return a.username.localeCompare(b.username);
-      } else if (userMonitorSecondarySort === 'fatigueCount') {
-        return b.fatigueCount - a.fatigueCount;
-      } else if (userMonitorSecondarySort === 'fatigueDuration') {
-        return b.fatigueDuration - a.fatigueDuration;
+      if (userMonitorSecondarySort === 'online') {
+        // 在线状态优先：在线用户排在前面
+        const aOnline = a.status === '在线' ? 1 : 0;
+        const bOnline = b.status === '在线' ? 1 : 0;
+        return bOnline - aOnline;
+      } else if (userMonitorSecondarySort === 'offline') {
+        // 离线状态优先：离线用户排在前面
+        const aOffline = a.status === '离线' ? 1 : 0;
+        const bOffline = b.status === '离线' ? 1 : 0;
+        return bOffline - aOffline;
       }
     }
 
