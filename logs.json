@@ -1,68 +1,365 @@
 [
   {
-    "time": "2025-06-28T08:19:49.361Z",
+    "time": "2025-06-29T02:40:03.201Z",
+    "user": "11",
+    "action": "delete_logs_file",
+    "level": "warning",
+    "detail": "删除了包含 104 条记录的日志文件"
+  },
+  {
+    "time": "2025-06-29T02:40:11.784Z",
+    "user": "11",
+    "action": "logout",
+    "role": "admin",
+    "level": "info"
+  },
+  {
+    "time": "2025-06-29T02:41:40.705Z",
+    "user": "11",
+    "action": "login",
+    "role": "admin",
+    "level": "info"
+  },
+  {
+    "time": "2025-06-29T02:51:17.826Z",
     "user": "System",
     "action": "system_startup",
     "level": "info",
     "detail": "疲劳检测系统启动"
   },
   {
-    "time": "2025-06-28T08:19:49.386Z",
+    "time": "2025-06-29T02:51:17.829Z",
     "user": "System",
     "action": "database_connection",
     "level": "warning",
     "detail": "数据库连接超时，正在重试",
     "error": "Connection timeout after 5000ms\n    at Database.connect (database.js:45:12)\n    at async connectToDatabase (app.js:23:5)",
-    "stack": "Error: Connection timeout after 5000ms\n    at Database.connect (database.js:45:12)\n    at async connectToDatabase (app.js:23:5)\n    at Object.<anonymous> (C:\\Users\\abc\\Desktop\\front\\main.js:64:5)\n    at Module._compile (node:internal/modules/cjs/loader:1738:14)\n    at Module._extensions..js (node:internal/modules/cjs/loader:1904:10)\n    at Module.load (node:internal/modules/cjs/loader:1472:32)\n    at Module._load (node:internal/modules/cjs/loader:1289:12)\n    at c._load (node:electron/js2c/node_init:2:17950)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:242:24)\n    at cjsLoader (node:internal/modules/esm/translators:270:5)\n    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:200:7)"
+    "stack": "Error: Connection timeout after 5000ms\n    at Database.connect (database.js:45:12)\n    at async connectToDatabase (app.js:23:5)\n    at Object.<anonymous> (C:\\Users\\abc\\Desktop\\front\\main.js:59:5)\n    at Module._compile (node:internal/modules/cjs/loader:1738:14)\n    at Module._extensions..js (node:internal/modules/cjs/loader:1904:10)\n    at Module.load (node:internal/modules/cjs/loader:1472:32)\n    at Module._load (node:internal/modules/cjs/loader:1289:12)\n    at c._load (node:electron/js2c/node_init:2:17950)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:242:24)\n    at cjsLoader (node:internal/modules/esm/translators:270:5)\n    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:200:7)"
   },
   {
-    "time": "2025-06-28T08:19:49.395Z",
+    "time": "2025-06-29T02:51:17.838Z",
     "user": "System",
     "action": "sensor_malfunction",
     "level": "error",
     "detail": "传感器设备离线",
     "error": "Device not responding on port COM3\n    at SerialPort.open (serialport.js:156:23)\n    at SensorManager.connect (sensor.js:78:15)\n    at DeviceController.initialize (device.js:34:8)",
-    "stack": "Error: Device not responding on port COM3\n    at SerialPort.open (serialport.js:156:23)\n    at SensorManager.connect (sensor.js:78:15)\n    at DeviceController.initialize (device.js:34:8)\n    at Object.<anonymous> (C:\\Users\\abc\\Desktop\\front\\main.js:68:5)\n    at Module._compile (node:internal/modules/cjs/loader:1738:14)\n    at Module._extensions..js (node:internal/modules/cjs/loader:1904:10)\n    at Module.load (node:internal/modules/cjs/loader:1472:32)\n    at Module._load (node:internal/modules/cjs/loader:1289:12)\n    at c._load (node:electron/js2c/node_init:2:17950)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:242:24)\n    at cjsLoader (node:internal/modules/esm/translators:270:5)\n    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:200:7)"
+    "stack": "Error: Device not responding on port COM3\n    at SerialPort.open (serialport.js:156:23)\n    at SensorManager.connect (sensor.js:78:15)\n    at DeviceController.initialize (device.js:34:8)\n    at Object.<anonymous> (C:\\Users\\abc\\Desktop\\front\\main.js:63:5)\n    at Module._compile (node:internal/modules/cjs/loader:1738:14)\n    at Module._extensions..js (node:internal/modules/cjs/loader:1904:10)\n    at Module.load (node:internal/modules/cjs/loader:1472:32)\n    at Module._load (node:internal/modules/cjs/loader:1289:12)\n    at c._load (node:electron/js2c/node_init:2:17950)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:242:24)\n    at cjsLoader (node:internal/modules/esm/translators:270:5)\n    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:200:7)"
   },
   {
-    "time": "2025-06-28T08:19:49.418Z",
+    "time": "2025-06-29T02:51:17.850Z",
     "user": "System",
     "action": "api_request_failed",
     "level": "error",
     "detail": "后端API调用失败",
     "error": "HTTP 500 Internal Server Error\n    at fetch (/api/users)\n    Response: {\"error\": \"Database query failed\", \"code\": \"DB_ERROR\"}",
-    "stack": "Error: HTTP 500 Internal Server Error\n    at fetch (/api/users)\n    Response: {\"error\": \"Database query failed\", \"code\": \"DB_ERROR\"}\n    at Object.<anonymous> (C:\\Users\\abc\\Desktop\\front\\main.js:72:5)\n    at Module._compile (node:internal/modules/cjs/loader:1738:14)\n    at Module._extensions..js (node:internal/modules/cjs/loader:1904:10)\n    at Module.load (node:internal/modules/cjs/loader:1472:32)\n    at Module._load (node:internal/modules/cjs/loader:1289:12)\n    at c._load (node:electron/js2c/node_init:2:17950)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:242:24)\n    at cjsLoader (node:internal/modules/esm/translators:270:5)\n    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:200:7)"
+    "stack": "Error: HTTP 500 Internal Server Error\n    at fetch (/api/users)\n    Response: {\"error\": \"Database query failed\", \"code\": \"DB_ERROR\"}\n    at Object.<anonymous> (C:\\Users\\abc\\Desktop\\front\\main.js:67:5)\n    at Module._compile (node:internal/modules/cjs/loader:1738:14)\n    at Module._extensions..js (node:internal/modules/cjs/loader:1904:10)\n    at Module.load (node:internal/modules/cjs/loader:1472:32)\n    at Module._load (node:internal/modules/cjs/loader:1289:12)\n    at c._load (node:electron/js2c/node_init:2:17950)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:242:24)\n    at cjsLoader (node:internal/modules/esm/translators:270:5)\n    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:200:7)"
   },
   {
-    "time": "2025-06-28T08:19:49.474Z",
+    "time": "2025-06-29T02:51:17.867Z",
     "user": "System",
     "action": "file_permission",
     "level": "warning",
     "detail": "日志文件写入权限不足",
     "error": "EACCES: permission denied, open '/var/log/fatigue.log'\n    at Object.openSync (fs.js:498:3)\n    at Object.writeFileSync (fs.js:1467:35)",
-    "stack": "Error: EACCES: permission denied, open '/var/log/fatigue.log'\n    at Object.openSync (fs.js:498:3)\n    at Object.writeFileSync (fs.js:1467:35)\n    at Object.<anonymous> (C:\\Users\\abc\\Desktop\\front\\main.js:76:5)\n    at Module._compile (node:internal/modules/cjs/loader:1738:14)\n    at Module._extensions..js (node:internal/modules/cjs/loader:1904:10)\n    at Module.load (node:internal/modules/cjs/loader:1472:32)\n    at Module._load (node:internal/modules/cjs/loader:1289:12)\n    at c._load (node:electron/js2c/node_init:2:17950)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:242:24)\n    at cjsLoader (node:internal/modules/esm/translators:270:5)\n    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:200:7)"
+    "stack": "Error: EACCES: permission denied, open '/var/log/fatigue.log'\n    at Object.openSync (fs.js:498:3)\n    at Object.writeFileSync (fs.js:1467:35)\n    at Object.<anonymous> (C:\\Users\\abc\\Desktop\\front\\main.js:71:5)\n    at Module._compile (node:internal/modules/cjs/loader:1738:14)\n    at Module._extensions..js (node:internal/modules/cjs/loader:1904:10)\n    at Module.load (node:internal/modules/cjs/loader:1472:32)\n    at Module._load (node:internal/modules/cjs/loader:1289:12)\n    at c._load (node:electron/js2c/node_init:2:17950)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:242:24)\n    at cjsLoader (node:internal/modules/esm/translators:270:5)\n    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:200:7)"
   },
   {
-    "time": "2025-06-28T08:19:49.571Z",
+    "time": "2025-06-29T02:51:17.892Z",
     "user": "System",
     "action": "network_timeout",
     "level": "error",
     "detail": "网络请求超时",
     "error": "ETIMEDOUT: connect timeout\n    at TCPConnectWrap.afterConnect [as oncomplete] (net.js:1146:16)\n    Target: https://api.fatigue-detection.com/status",
-    "stack": "Error: ETIMEDOUT: connect timeout\n    at TCPConnectWrap.afterConnect [as oncomplete] (net.js:1146:16)\n    Target: https://api.fatigue-detection.com/status\n    at Object.<anonymous> (C:\\Users\\abc\\Desktop\\front\\main.js:80:5)\n    at Module._compile (node:internal/modules/cjs/loader:1738:14)\n    at Module._extensions..js (node:internal/modules/cjs/loader:1904:10)\n    at Module.load (node:internal/modules/cjs/loader:1472:32)\n    at Module._load (node:internal/modules/cjs/loader:1289:12)\n    at c._load (node:electron/js2c/node_init:2:17950)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:242:24)\n    at cjsLoader (node:internal/modules/esm/translators:270:5)\n    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:200:7)"
+    "stack": "Error: ETIMEDOUT: connect timeout\n    at TCPConnectWrap.afterConnect [as oncomplete] (net.js:1146:16)\n    Target: https://api.fatigue-detection.com/status\n    at Object.<anonymous> (C:\\Users\\abc\\Desktop\\front\\main.js:75:5)\n    at Module._compile (node:internal/modules/cjs/loader:1738:14)\n    at Module._extensions..js (node:internal/modules/cjs/loader:1904:10)\n    at Module.load (node:internal/modules/cjs/loader:1472:32)\n    at Module._load (node:internal/modules/cjs/loader:1289:12)\n    at c._load (node:electron/js2c/node_init:2:17950)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:242:24)\n    at cjsLoader (node:internal/modules/esm/translators:270:5)\n    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:200:7)"
   },
   {
-    "time": "2025-06-28T08:19:49.579Z",
+    "time": "2025-06-29T02:51:17.902Z",
     "user": "System",
     "action": "backup_completed",
     "level": "success",
     "detail": "数据备份完成，备份文件大小: 2.3MB"
   },
   {
-    "time": "2025-06-28T08:19:55.702Z",
+    "time": "2025-06-29T02:51:21.992Z",
+    "user": "1",
+    "action": "login",
+    "role": "admin",
+    "level": "info"
+  },
+  {
+    "time": "2025-06-29T02:51:24.243Z",
+    "user": "1",
+    "action": "logout",
+    "role": "admin",
+    "level": "info"
+  },
+  {
+    "time": "2025-06-29T02:51:26.803Z",
     "user": "11",
     "action": "login",
     "role": "admin",
-    "level": "success"
+    "level": "info"
+  },
+  {
+    "time": "2025-06-29T02:51:53.582Z",
+    "user": "11",
+    "action": "logout",
+    "role": "admin",
+    "level": "info"
+  },
+  {
+    "time": "2025-06-29T02:51:56.762Z",
+    "user": "11",
+    "action": "login",
+    "role": "admin",
+    "level": "info"
+  },
+  {
+    "time": "2025-06-29T02:51:58.883Z",
+    "user": "11",
+    "action": "logout",
+    "role": "admin",
+    "level": "info"
+  },
+  {
+    "time": "2025-06-29T02:52:01.842Z",
+    "user": "11",
+    "action": "login",
+    "role": "monitor",
+    "level": "info"
+  },
+  {
+    "time": "2025-06-29T03:07:22.452Z",
+    "user": "System",
+    "action": "system_startup",
+    "level": "info",
+    "detail": "疲劳检测系统启动"
+  },
+  {
+    "time": "2025-06-29T03:07:22.454Z",
+    "user": "System",
+    "action": "database_connection",
+    "level": "warning",
+    "detail": "数据库连接超时，正在重试",
+    "error": "Connection timeout after 5000ms\n    at Database.connect (database.js:45:12)\n    at async connectToDatabase (app.js:23:5)",
+    "stack": "Error: Connection timeout after 5000ms\n    at Database.connect (database.js:45:12)\n    at async connectToDatabase (app.js:23:5)\n    at Object.<anonymous> (C:\\Users\\abc\\Desktop\\front\\main.js:59:5)\n    at Module._compile (node:internal/modules/cjs/loader:1738:14)\n    at Module._extensions..js (node:internal/modules/cjs/loader:1904:10)\n    at Module.load (node:internal/modules/cjs/loader:1472:32)\n    at Module._load (node:internal/modules/cjs/loader:1289:12)\n    at c._load (node:electron/js2c/node_init:2:17950)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:242:24)\n    at cjsLoader (node:internal/modules/esm/translators:270:5)\n    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:200:7)"
+  },
+  {
+    "time": "2025-06-29T03:07:22.469Z",
+    "user": "System",
+    "action": "sensor_malfunction",
+    "level": "error",
+    "detail": "传感器设备离线",
+    "error": "Device not responding on port COM3\n    at SerialPort.open (serialport.js:156:23)\n    at SensorManager.connect (sensor.js:78:15)\n    at DeviceController.initialize (device.js:34:8)",
+    "stack": "Error: Device not responding on port COM3\n    at SerialPort.open (serialport.js:156:23)\n    at SensorManager.connect (sensor.js:78:15)\n    at DeviceController.initialize (device.js:34:8)\n    at Object.<anonymous> (C:\\Users\\abc\\Desktop\\front\\main.js:63:5)\n    at Module._compile (node:internal/modules/cjs/loader:1738:14)\n    at Module._extensions..js (node:internal/modules/cjs/loader:1904:10)\n    at Module.load (node:internal/modules/cjs/loader:1472:32)\n    at Module._load (node:internal/modules/cjs/loader:1289:12)\n    at c._load (node:electron/js2c/node_init:2:17950)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:242:24)\n    at cjsLoader (node:internal/modules/esm/translators:270:5)\n    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:200:7)"
+  },
+  {
+    "time": "2025-06-29T03:07:22.479Z",
+    "user": "System",
+    "action": "api_request_failed",
+    "level": "error",
+    "detail": "后端API调用失败",
+    "error": "HTTP 500 Internal Server Error\n    at fetch (/api/users)\n    Response: {\"error\": \"Database query failed\", \"code\": \"DB_ERROR\"}",
+    "stack": "Error: HTTP 500 Internal Server Error\n    at fetch (/api/users)\n    Response: {\"error\": \"Database query failed\", \"code\": \"DB_ERROR\"}\n    at Object.<anonymous> (C:\\Users\\abc\\Desktop\\front\\main.js:67:5)\n    at Module._compile (node:internal/modules/cjs/loader:1738:14)\n    at Module._extensions..js (node:internal/modules/cjs/loader:1904:10)\n    at Module.load (node:internal/modules/cjs/loader:1472:32)\n    at Module._load (node:internal/modules/cjs/loader:1289:12)\n    at c._load (node:electron/js2c/node_init:2:17950)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:242:24)\n    at cjsLoader (node:internal/modules/esm/translators:270:5)\n    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:200:7)"
+  },
+  {
+    "time": "2025-06-29T03:07:22.482Z",
+    "user": "System",
+    "action": "file_permission",
+    "level": "warning",
+    "detail": "日志文件写入权限不足",
+    "error": "EACCES: permission denied, open '/var/log/fatigue.log'\n    at Object.openSync (fs.js:498:3)\n    at Object.writeFileSync (fs.js:1467:35)",
+    "stack": "Error: EACCES: permission denied, open '/var/log/fatigue.log'\n    at Object.openSync (fs.js:498:3)\n    at Object.writeFileSync (fs.js:1467:35)\n    at Object.<anonymous> (C:\\Users\\abc\\Desktop\\front\\main.js:71:5)\n    at Module._compile (node:internal/modules/cjs/loader:1738:14)\n    at Module._extensions..js (node:internal/modules/cjs/loader:1904:10)\n    at Module.load (node:internal/modules/cjs/loader:1472:32)\n    at Module._load (node:internal/modules/cjs/loader:1289:12)\n    at c._load (node:electron/js2c/node_init:2:17950)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:242:24)\n    at cjsLoader (node:internal/modules/esm/translators:270:5)\n    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:200:7)"
+  },
+  {
+    "time": "2025-06-29T03:07:22.498Z",
+    "user": "System",
+    "action": "network_timeout",
+    "level": "error",
+    "detail": "网络请求超时",
+    "error": "ETIMEDOUT: connect timeout\n    at TCPConnectWrap.afterConnect [as oncomplete] (net.js:1146:16)\n    Target: https://api.fatigue-detection.com/status",
+    "stack": "Error: ETIMEDOUT: connect timeout\n    at TCPConnectWrap.afterConnect [as oncomplete] (net.js:1146:16)\n    Target: https://api.fatigue-detection.com/status\n    at Object.<anonymous> (C:\\Users\\abc\\Desktop\\front\\main.js:75:5)\n    at Module._compile (node:internal/modules/cjs/loader:1738:14)\n    at Module._extensions..js (node:internal/modules/cjs/loader:1904:10)\n    at Module.load (node:internal/modules/cjs/loader:1472:32)\n    at Module._load (node:internal/modules/cjs/loader:1289:12)\n    at c._load (node:electron/js2c/node_init:2:17950)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:242:24)\n    at cjsLoader (node:internal/modules/esm/translators:270:5)\n    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:200:7)"
+  },
+  {
+    "time": "2025-06-29T03:07:22.518Z",
+    "user": "System",
+    "action": "backup_completed",
+    "level": "success",
+    "detail": "数据备份完成，备份文件大小: 2.3MB"
+  },
+  {
+    "time": "2025-06-29T03:07:26.232Z",
+    "user": "22",
+    "action": "login",
+    "role": "admin",
+    "level": "info"
+  },
+  {
+    "time": "2025-06-29T03:10:21.182Z",
+    "user": "22",
+    "action": "logout",
+    "role": "admin",
+    "level": "info"
+  },
+  {
+    "time": "2025-06-29T03:10:24.298Z",
+    "user": "11",
+    "action": "login",
+    "role": "monitor",
+    "level": "info"
+  },
+  {
+    "time": "2025-06-29T03:14:38.638Z",
+    "user": "System",
+    "action": "system_startup",
+    "level": "info",
+    "detail": "疲劳检测系统启动"
+  },
+  {
+    "time": "2025-06-29T03:14:38.641Z",
+    "user": "System",
+    "action": "database_connection",
+    "level": "warning",
+    "detail": "数据库连接超时，正在重试",
+    "error": "Connection timeout after 5000ms\n    at Database.connect (database.js:45:12)\n    at async connectToDatabase (app.js:23:5)",
+    "stack": "Error: Connection timeout after 5000ms\n    at Database.connect (database.js:45:12)\n    at async connectToDatabase (app.js:23:5)\n    at Object.<anonymous> (C:\\Users\\abc\\Desktop\\front\\main.js:59:5)\n    at Module._compile (node:internal/modules/cjs/loader:1738:14)\n    at Module._extensions..js (node:internal/modules/cjs/loader:1904:10)\n    at Module.load (node:internal/modules/cjs/loader:1472:32)\n    at Module._load (node:internal/modules/cjs/loader:1289:12)\n    at c._load (node:electron/js2c/node_init:2:17950)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:242:24)\n    at cjsLoader (node:internal/modules/esm/translators:270:5)\n    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:200:7)"
+  },
+  {
+    "time": "2025-06-29T03:14:38.655Z",
+    "user": "System",
+    "action": "sensor_malfunction",
+    "level": "error",
+    "detail": "传感器设备离线",
+    "error": "Device not responding on port COM3\n    at SerialPort.open (serialport.js:156:23)\n    at SensorManager.connect (sensor.js:78:15)\n    at DeviceController.initialize (device.js:34:8)",
+    "stack": "Error: Device not responding on port COM3\n    at SerialPort.open (serialport.js:156:23)\n    at SensorManager.connect (sensor.js:78:15)\n    at DeviceController.initialize (device.js:34:8)\n    at Object.<anonymous> (C:\\Users\\abc\\Desktop\\front\\main.js:63:5)\n    at Module._compile (node:internal/modules/cjs/loader:1738:14)\n    at Module._extensions..js (node:internal/modules/cjs/loader:1904:10)\n    at Module.load (node:internal/modules/cjs/loader:1472:32)\n    at Module._load (node:internal/modules/cjs/loader:1289:12)\n    at c._load (node:electron/js2c/node_init:2:17950)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:242:24)\n    at cjsLoader (node:internal/modules/esm/translators:270:5)\n    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:200:7)"
+  },
+  {
+    "time": "2025-06-29T03:14:38.666Z",
+    "user": "System",
+    "action": "api_request_failed",
+    "level": "error",
+    "detail": "后端API调用失败",
+    "error": "HTTP 500 Internal Server Error\n    at fetch (/api/users)\n    Response: {\"error\": \"Database query failed\", \"code\": \"DB_ERROR\"}",
+    "stack": "Error: HTTP 500 Internal Server Error\n    at fetch (/api/users)\n    Response: {\"error\": \"Database query failed\", \"code\": \"DB_ERROR\"}\n    at Object.<anonymous> (C:\\Users\\abc\\Desktop\\front\\main.js:67:5)\n    at Module._compile (node:internal/modules/cjs/loader:1738:14)\n    at Module._extensions..js (node:internal/modules/cjs/loader:1904:10)\n    at Module.load (node:internal/modules/cjs/loader:1472:32)\n    at Module._load (node:internal/modules/cjs/loader:1289:12)\n    at c._load (node:electron/js2c/node_init:2:17950)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:242:24)\n    at cjsLoader (node:internal/modules/esm/translators:270:5)\n    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:200:7)"
+  },
+  {
+    "time": "2025-06-29T03:14:38.685Z",
+    "user": "System",
+    "action": "file_permission",
+    "level": "warning",
+    "detail": "日志文件写入权限不足",
+    "error": "EACCES: permission denied, open '/var/log/fatigue.log'\n    at Object.openSync (fs.js:498:3)\n    at Object.writeFileSync (fs.js:1467:35)",
+    "stack": "Error: EACCES: permission denied, open '/var/log/fatigue.log'\n    at Object.openSync (fs.js:498:3)\n    at Object.writeFileSync (fs.js:1467:35)\n    at Object.<anonymous> (C:\\Users\\abc\\Desktop\\front\\main.js:71:5)\n    at Module._compile (node:internal/modules/cjs/loader:1738:14)\n    at Module._extensions..js (node:internal/modules/cjs/loader:1904:10)\n    at Module.load (node:internal/modules/cjs/loader:1472:32)\n    at Module._load (node:internal/modules/cjs/loader:1289:12)\n    at c._load (node:electron/js2c/node_init:2:17950)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:242:24)\n    at cjsLoader (node:internal/modules/esm/translators:270:5)\n    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:200:7)"
+  },
+  {
+    "time": "2025-06-29T03:14:38.705Z",
+    "user": "System",
+    "action": "network_timeout",
+    "level": "error",
+    "detail": "网络请求超时",
+    "error": "ETIMEDOUT: connect timeout\n    at TCPConnectWrap.afterConnect [as oncomplete] (net.js:1146:16)\n    Target: https://api.fatigue-detection.com/status",
+    "stack": "Error: ETIMEDOUT: connect timeout\n    at TCPConnectWrap.afterConnect [as oncomplete] (net.js:1146:16)\n    Target: https://api.fatigue-detection.com/status\n    at Object.<anonymous> (C:\\Users\\abc\\Desktop\\front\\main.js:75:5)\n    at Module._compile (node:internal/modules/cjs/loader:1738:14)\n    at Module._extensions..js (node:internal/modules/cjs/loader:1904:10)\n    at Module.load (node:internal/modules/cjs/loader:1472:32)\n    at Module._load (node:internal/modules/cjs/loader:1289:12)\n    at c._load (node:electron/js2c/node_init:2:17950)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:242:24)\n    at cjsLoader (node:internal/modules/esm/translators:270:5)\n    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:200:7)"
+  },
+  {
+    "time": "2025-06-29T03:14:38.714Z",
+    "user": "System",
+    "action": "backup_completed",
+    "level": "success",
+    "detail": "数据备份完成，备份文件大小: 2.3MB"
+  },
+  {
+    "time": "2025-06-29T03:14:44.386Z",
+    "user": "1",
+    "action": "login",
+    "role": "admin",
+    "level": "info"
+  },
+  {
+    "time": "2025-06-29T03:23:59.029Z",
+    "user": "System",
+    "action": "system_startup",
+    "level": "info",
+    "detail": "疲劳检测系统启动"
+  },
+  {
+    "time": "2025-06-29T03:23:59.036Z",
+    "user": "System",
+    "action": "database_connection",
+    "level": "warning",
+    "detail": "数据库连接超时，正在重试",
+    "error": "Connection timeout after 5000ms\n    at Database.connect (database.js:45:12)\n    at async connectToDatabase (app.js:23:5)",
+    "stack": "Error: Connection timeout after 5000ms\n    at Database.connect (database.js:45:12)\n    at async connectToDatabase (app.js:23:5)\n    at Object.<anonymous> (C:\\Users\\abc\\Desktop\\front\\main.js:59:5)\n    at Module._compile (node:internal/modules/cjs/loader:1738:14)\n    at Module._extensions..js (node:internal/modules/cjs/loader:1904:10)\n    at Module.load (node:internal/modules/cjs/loader:1472:32)\n    at Module._load (node:internal/modules/cjs/loader:1289:12)\n    at c._load (node:electron/js2c/node_init:2:17950)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:242:24)\n    at cjsLoader (node:internal/modules/esm/translators:270:5)\n    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:200:7)"
+  },
+  {
+    "time": "2025-06-29T03:23:59.052Z",
+    "user": "System",
+    "action": "sensor_malfunction",
+    "level": "error",
+    "detail": "传感器设备离线",
+    "error": "Device not responding on port COM3\n    at SerialPort.open (serialport.js:156:23)\n    at SensorManager.connect (sensor.js:78:15)\n    at DeviceController.initialize (device.js:34:8)",
+    "stack": "Error: Device not responding on port COM3\n    at SerialPort.open (serialport.js:156:23)\n    at SensorManager.connect (sensor.js:78:15)\n    at DeviceController.initialize (device.js:34:8)\n    at Object.<anonymous> (C:\\Users\\abc\\Desktop\\front\\main.js:63:5)\n    at Module._compile (node:internal/modules/cjs/loader:1738:14)\n    at Module._extensions..js (node:internal/modules/cjs/loader:1904:10)\n    at Module.load (node:internal/modules/cjs/loader:1472:32)\n    at Module._load (node:internal/modules/cjs/loader:1289:12)\n    at c._load (node:electron/js2c/node_init:2:17950)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:242:24)\n    at cjsLoader (node:internal/modules/esm/translators:270:5)\n    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:200:7)"
+  },
+  {
+    "time": "2025-06-29T03:23:59.072Z",
+    "user": "System",
+    "action": "api_request_failed",
+    "level": "error",
+    "detail": "后端API调用失败",
+    "error": "HTTP 500 Internal Server Error\n    at fetch (/api/users)\n    Response: {\"error\": \"Database query failed\", \"code\": \"DB_ERROR\"}",
+    "stack": "Error: HTTP 500 Internal Server Error\n    at fetch (/api/users)\n    Response: {\"error\": \"Database query failed\", \"code\": \"DB_ERROR\"}\n    at Object.<anonymous> (C:\\Users\\abc\\Desktop\\front\\main.js:67:5)\n    at Module._compile (node:internal/modules/cjs/loader:1738:14)\n    at Module._extensions..js (node:internal/modules/cjs/loader:1904:10)\n    at Module.load (node:internal/modules/cjs/loader:1472:32)\n    at Module._load (node:internal/modules/cjs/loader:1289:12)\n    at c._load (node:electron/js2c/node_init:2:17950)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:242:24)\n    at cjsLoader (node:internal/modules/esm/translators:270:5)\n    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:200:7)"
+  },
+  {
+    "time": "2025-06-29T03:23:59.129Z",
+    "user": "System",
+    "action": "file_permission",
+    "level": "warning",
+    "detail": "日志文件写入权限不足",
+    "error": "EACCES: permission denied, open '/var/log/fatigue.log'\n    at Object.openSync (fs.js:498:3)\n    at Object.writeFileSync (fs.js:1467:35)",
+    "stack": "Error: EACCES: permission denied, open '/var/log/fatigue.log'\n    at Object.openSync (fs.js:498:3)\n    at Object.writeFileSync (fs.js:1467:35)\n    at Object.<anonymous> (C:\\Users\\abc\\Desktop\\front\\main.js:71:5)\n    at Module._compile (node:internal/modules/cjs/loader:1738:14)\n    at Module._extensions..js (node:internal/modules/cjs/loader:1904:10)\n    at Module.load (node:internal/modules/cjs/loader:1472:32)\n    at Module._load (node:internal/modules/cjs/loader:1289:12)\n    at c._load (node:electron/js2c/node_init:2:17950)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:242:24)\n    at cjsLoader (node:internal/modules/esm/translators:270:5)\n    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:200:7)"
+  },
+  {
+    "time": "2025-06-29T03:23:59.136Z",
+    "user": "System",
+    "action": "network_timeout",
+    "level": "error",
+    "detail": "网络请求超时",
+    "error": "ETIMEDOUT: connect timeout\n    at TCPConnectWrap.afterConnect [as oncomplete] (net.js:1146:16)\n    Target: https://api.fatigue-detection.com/status",
+    "stack": "Error: ETIMEDOUT: connect timeout\n    at TCPConnectWrap.afterConnect [as oncomplete] (net.js:1146:16)\n    Target: https://api.fatigue-detection.com/status\n    at Object.<anonymous> (C:\\Users\\abc\\Desktop\\front\\main.js:75:5)\n    at Module._compile (node:internal/modules/cjs/loader:1738:14)\n    at Module._extensions..js (node:internal/modules/cjs/loader:1904:10)\n    at Module.load (node:internal/modules/cjs/loader:1472:32)\n    at Module._load (node:internal/modules/cjs/loader:1289:12)\n    at c._load (node:electron/js2c/node_init:2:17950)\n    at TracingChannel.traceSync (node:diagnostics_channel:322:14)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:242:24)\n    at cjsLoader (node:internal/modules/esm/translators:270:5)\n    at ModuleWrap.<anonymous> (node:internal/modules/esm/translators:200:7)"
+  },
+  {
+    "time": "2025-06-29T03:23:59.175Z",
+    "user": "System",
+    "action": "backup_completed",
+    "level": "success",
+    "detail": "数据备份完成，备份文件大小: 2.3MB"
+  },
+  {
+    "time": "2025-06-29T03:24:03.058Z",
+    "user": "11",
+    "action": "login",
+    "role": "admin",
+    "level": "info"
+  },
+  {
+    "time": "2025-06-29T03:29:24.774Z",
+    "user": "11",
+    "action": "logout",
+    "role": "admin",
+    "level": "info"
+  },
+  {
+    "time": "2025-06-29T03:29:27.672Z",
+    "user": "1122",
+    "action": "login",
+    "role": "monitor",
+    "level": "info"
+  },
+  {
+    "time": "2025-06-29T03:29:27.680Z",
+    "user": "1122",
+    "action": "login_success",
+    "level": "info",
+    "detail": "用户登录成功",
+    "role": "monitor"
   }
 ]

@@ -1,5 +1,34 @@
 // ================== 用户管理面板逻辑 ==================
 
+// 确保API正确初始化
+function ensureApiReady() {
+  if (!window.api) {
+    console.error('❌ window.api 未定义，尝试重新初始化...');
+    if (window.apiService) {
+      window.api = {
+        addUser: (user) => window.apiService.addUser(user),
+        getUsers: () => window.apiService.getUsers(),
+        updateUser: (user) => window.apiService.updateUser(user.username, user),
+        deleteUser: (username) => window.apiService.deleteUser(username),
+        toggleUserStatus: (username, status) => window.apiService.toggleUserStatus(username, status)
+      };
+      console.log('🔧 已重新初始化基本API方法');
+    } else {
+      throw new Error('window.apiService 也未定义，无法初始化API');
+    }
+  }
+
+  if (typeof window.api.addUser !== 'function') {
+    console.error('❌ window.api.addUser 不是函数，尝试修复...');
+    if (window.apiService && typeof window.apiService.addUser === 'function') {
+      window.api.addUser = (user) => window.apiService.addUser(user);
+      console.log('🔧 已修复 addUser 方法');
+    } else {
+      throw new Error('无法修复 addUser 方法');
+    }
+  }
+}
+
 // 创建用户项元素
 function createUserItem(user) {
   const template = document.getElementById('user-item-template');
@@ -8,7 +37,16 @@ function createUserItem(user) {
   const roleDisplay = getRoleText(user.role);
 
   // 设置用户信息
-  userItem.querySelector('.user-name').textContent = user.username;
+  const userName = userItem.querySelector('.user-name');
+  userName.textContent = user.username;
+
+  // 如果用户被禁用，添加禁用样式
+  if (user.status === 'disabled') {
+    userName.style.textDecoration = 'line-through';
+    userName.style.opacity = '0.6';
+    userName.title = '该用户已被禁用';
+  }
+
   userItem.querySelector('.user-phone').textContent = user.phone ? '手机号: ' + user.phone : '未设置手机号';
 
   // 设置角色徽章
@@ -16,12 +54,23 @@ function createUserItem(user) {
   badge.textContent = roleDisplay;
   badge.className = `user-badge role-${user.role}`;
 
+  // 如果用户被禁用，角色徽章也添加禁用样式
+  if (user.status === 'disabled') {
+    badge.style.opacity = '0.6';
+    badge.title = '已禁用';
+  }
+
   // 设置按钮事件
   const editBtn = userItem.querySelector('.action-btn-edit');
+  const toggleBtn = userItem.querySelector('.action-btn-toggle');
   const deleteBtn = userItem.querySelector('.action-btn-delete');
 
   editBtn.onclick = () => editUser(user.username);
+  toggleBtn.onclick = () => toggleUserStatus(user.username, user.status);
   deleteBtn.onclick = () => confirmDeleteUser(user.username);
+
+  // 设置禁用/启用按钮的状态和文本
+  updateToggleButton(toggleBtn, user.status);
 
   return userItem;
 }
@@ -157,8 +206,34 @@ async function loadUsers() {
     if (userFilter.search) params.search = userFilter.search;
 
     // 从API获取所有符合条件的用户数据
-    const response = await window.apiService.getUsers(params);
-    const allUsers = response.data.users || [];
+    const response = await window.api.getUsers(params);
+
+    // 标准化响应数据处理
+    let allUsers = [];
+    if (response) {
+      if (Array.isArray(response)) {
+        // 直接返回数组格式
+        allUsers = response;
+      } else if (response.data && Array.isArray(response.data.users)) {
+        // 标准API响应格式：{data: {users: [...]}}
+        allUsers = response.data.users;
+      } else if (response.data && Array.isArray(response.data)) {
+        // 简化API响应格式：{data: [...]}
+        allUsers = response.data;
+      } else if (Array.isArray(response.users)) {
+        // 直接users字段：{users: [...]}
+        allUsers = response.users;
+      } else {
+        console.warn('未知的用户数据格式:', response);
+        allUsers = [];
+      }
+    }
+
+    // 确保每个用户都有状态字段
+    allUsers = allUsers.map(user => ({
+      ...user,
+      status: user.status || 'active' // 默认状态为活跃
+    }));
 
     console.log(`✅ 获取到 ${allUsers.length} 个用户数据`);
 
@@ -202,9 +277,22 @@ async function loadUsers() {
     renderUserPagination(total, page, pageSize);
   } catch (error) {
     console.error('❌ 加载用户列表失败:', error);
-    showNetworkError('用户数据');
+
+    // 根据错误类型显示专业的错误信息
+    let errorMessage = '网络连接失败';
+    if (error.type === 'NETWORK_ERROR') {
+      errorMessage = error.message;
+    } else if (error.message && !error.message.includes('is not a function')) {
+      errorMessage = error.message;
+    }
+
+    // 显示错误信息
+    showNetworkError('用户数据', errorMessage);
     const list = document.getElementById('userList');
-    list.innerHTML = '<div class="text-center text-danger py-4">加载用户列表失败，请刷新页面重试</div>';
+    list.innerHTML = `<div class="text-center text-danger py-4">${errorMessage}</div>`;
+
+    // 重新抛出错误，让调用者知道操作失败
+    throw error;
   }
 }
 
@@ -252,9 +340,14 @@ if (deleteUserConfirmBtn) {
         await actuallyDeleteUser(userIdToDelete);
         userIdToDelete = null;
         closeDeleteUserModal();
+
+        // 显示成功提示
+        showToast('用户删除成功', 'success');
       } catch (error) {
         console.error('删除用户失败:', error);
-        alert('删除用户失败，请稍后重试');
+
+        // 显示具体的错误信息
+        showToast(error.message || '删除用户失败，请稍后重试', 'error');
       } finally {
         // 恢复按钮状态
         this.disabled = false;
@@ -278,11 +371,19 @@ function closeDeleteUserModal() {
 
 async function actuallyDeleteUser(userId) {
   try {
-    await window.api.deleteUser(userId);
-    await loadUsers(); // 重新加载用户列表
+    const result = await window.api.deleteUser(userId);
+
+    // 检查返回结果
+    if (result && result.success === true) {
+      await loadUsers(); // 重新加载用户列表
+    } else {
+      throw new Error(result?.message || '删除失败');
+    }
   } catch (error) {
     console.error('删除用户API调用失败:', error);
-    throw error; // 重新抛出错误，让调用者处理
+
+    // 直接抛出错误（API已经标准化了错误消息）
+    throw new Error(error.message || '删除失败，请稍后重试');
   }
 }
 
@@ -299,6 +400,7 @@ window.confirmDeleteUser = function(username) {
   }
 };
 
+// 添加用户相关函数
 function openAddUserModal() {
   document.getElementById('addUserModal').style.display = 'flex';
   document.getElementById('modalUser').value = '';
@@ -307,15 +409,21 @@ function openAddUserModal() {
   document.getElementById('modalPhone').value = '';
   document.getElementById('modalMsg').innerText = '';
 }
+
 function closeAddUserModal() {
   document.getElementById('addUserModal').style.display = 'none';
 }
+
+// 添加用户按钮事件
 document.getElementById('addUserBtn').onclick = async function() {
-  const username = document.getElementById('modalUser').value;
+  const username = document.getElementById('modalUser').value.trim();
   const password = document.getElementById('modalPwd').value;
   const role = document.getElementById('modalRole').value;
-  const phone = document.getElementById('modalPhone').value;
+  const phone = document.getElementById('modalPhone').value.trim();
   const msg = document.getElementById('modalMsg');
+  const btn = document.getElementById('addUserBtn');
+
+  // 表单验证
   if (!username || !password) {
     msg.innerText = '用户名和密码不能为空';
     return;
@@ -324,17 +432,56 @@ document.getElementById('addUserBtn').onclick = async function() {
     msg.innerText = '手机号格式不正确';
     return;
   }
-  const users = await window.api.getUsers();
-  if (users.find(u => u.username === username)) {
-    msg.innerText = '用户名已存在';
-    return;
+
+  // 禁用按钮，防止重复提交
+  btn.disabled = true;
+  btn.innerText = '添加中...';
+  msg.innerText = '';
+
+  try {
+    // 确保API就绪
+    ensureApiReady();
+
+    // 调用后端API添加用户
+    const result = await window.api.addUser({ username, password, role, phone });
+
+    // 检查返回结果
+    if (result && result.success === true) {
+      msg.style.color = '#28a745';
+      msg.innerText = result.message || '添加成功';
+
+      // 记录添加用户日志
+      await logUserAction('add_user', `添加用户: ${username} (${role})`, 'info');
+
+      setTimeout(() => {
+        closeAddUserModal();
+        loadUsers();
+      }, 600);
+    } else {
+      msg.style.color = '#d32f2f';
+      msg.innerText = result?.message || '添加失败，请稍后重试';
+
+      // 记录添加用户失败日志
+      await logUserAction('add_user_failed', `添加用户失败: ${username} (${role}) - ${result?.message || '未知错误'}`, 'error');
+    }
+  } catch (error) {
+    console.error('添加用户失败:', error);
+    msg.style.color = '#d32f2f';
+
+    // 根据错误类型显示专业的错误信息
+    let errorMessage = '网络连接失败';
+    if (error.type === 'NETWORK_ERROR') {
+      errorMessage = error.message;
+    } else if (error.message && !error.message.includes('is not a function')) {
+      errorMessage = error.message;
+    }
+
+    msg.innerText = errorMessage;
+  } finally {
+    // 恢复按钮状态
+    btn.disabled = false;
+    btn.innerText = '添加';
   }
-  await window.api.addUser({ username, password, role, phone });
-  msg.innerText = '添加成功';
-  setTimeout(() => {
-    closeAddUserModal();
-    loadUsers();
-  }, 600);
 };
 
 // 编辑用户弹窗
@@ -349,11 +496,14 @@ window.editUser = function(username) {
     document.getElementById('editModalMsg').innerText = '';
     document.getElementById('editUserModal').style.display = 'flex';
     document.getElementById('editUserBtn').onclick = async function() {
-      const newUsername = document.getElementById('editModalUser').value;
+      const newUsername = document.getElementById('editModalUser').value.trim();
       const newPwd = document.getElementById('editModalPwd').value;
       const newRole = document.getElementById('editModalRole').value;
-      const newPhone = document.getElementById('editModalPhone').value;
+      const newPhone = document.getElementById('editModalPhone').value.trim();
       const msg = document.getElementById('editModalMsg');
+      const btn = document.getElementById('editUserBtn');
+
+      // 表单验证
       if (!newUsername) {
         msg.innerText = '用户名不能为空';
         return;
@@ -362,17 +512,102 @@ window.editUser = function(username) {
         msg.innerText = '手机号格式不正确';
         return;
       }
-      await window.api.updateUser({ username: newUsername, password: newPwd, role: newRole, phone: newPhone });
-      msg.innerText = '保存成功';
-      setTimeout(() => {
-        closeEditUserModal();
-        loadUsers();
-      }, 600);
+
+      // 禁用按钮，防止重复提交
+      btn.disabled = true;
+      btn.innerText = '保存中...';
+      msg.innerText = '';
+
+      try {
+        // 调用后端API更新用户
+        const result = await window.api.updateUser({ username: newUsername, password: newPwd, role: newRole, phone: newPhone });
+
+        // 检查返回结果
+        if (result && result.success === true) {
+          msg.style.color = '#28a745';
+          msg.innerText = result.message || '保存成功';
+          setTimeout(() => {
+            closeEditUserModal();
+            loadUsers();
+          }, 600);
+        } else {
+          msg.style.color = '#d32f2f';
+          msg.innerText = result?.message || '保存失败，请稍后重试';
+        }
+      } catch (error) {
+        console.error('更新用户失败:', error);
+        msg.style.color = '#d32f2f';
+
+        // 显示错误信息（API已经标准化了错误消息）
+        msg.innerText = error.message || '保存失败，请稍后重试';
+      } finally {
+        // 恢复按钮状态
+        btn.disabled = false;
+        btn.innerText = '保存';
+      }
     };
   });
 };
 function closeEditUserModal() {
   document.getElementById('editUserModal').style.display = 'none';
+}
+
+// 更新禁用/启用按钮的状态
+function updateToggleButton(button, status) {
+  const isDisabled = status === 'disabled';
+
+  if (isDisabled) {
+    button.className = 'btn btn-success btn-sm action-btn-toggle';
+    button.innerHTML = '<i class="fa fa-check me-1"></i>启用';
+    button.title = '启用用户';
+  } else {
+    button.className = 'btn btn-warning btn-sm action-btn-toggle';
+    button.innerHTML = '<i class="fa fa-ban me-1"></i>禁用';
+    button.title = '禁用用户';
+  }
+}
+
+// 切换用户状态（禁用/启用）
+async function toggleUserStatus(username, currentStatus) {
+  const isCurrentlyDisabled = currentStatus === 'disabled';
+  const newStatus = isCurrentlyDisabled ? 'active' : 'disabled';
+  const action = isCurrentlyDisabled ? '启用' : '禁用';
+
+  // 确认操作
+  if (!confirm(`确定要${action}用户 "${username}" 吗？`)) {
+    return;
+  }
+
+  try {
+    console.log(`🔄 正在${action}用户: ${username}`);
+
+    const result = await window.api.toggleUserStatus(username, newStatus);
+
+    if (result && result.success === true) {
+      showToast(`用户 ${username} ${action}成功`, 'success');
+
+      // 记录用户状态切换日志
+      await logUserAction('toggle_user_status', `${action}用户: ${username} (状态: ${newStatus})`, 'info');
+
+      await loadUsers(); // 重新加载用户列表
+    } else {
+      // 记录操作失败日志
+      await logUserAction('toggle_user_status_failed', `${action}用户失败: ${username} - ${result?.message || '未知错误'}`, 'error');
+      throw new Error(result?.message || `${action}失败`);
+    }
+  } catch (error) {
+    console.error(`${action}用户失败:`, error);
+
+    // 根据错误类型显示专业的错误信息
+    let errorMessage = '网络连接失败';
+    if (error.type === 'NETWORK_ERROR') {
+      errorMessage = error.message;
+    } else if (error.message && !error.message.includes('is not a function')) {
+      errorMessage = error.message;
+    }
+
+    showToast(errorMessage, 'error');
+  }
 }
 
 
@@ -383,8 +618,12 @@ function logout() {
   modal.show();
   // 只绑定一次，避免多次绑定导致卡死
   const confirmBtn = document.getElementById('logoutConfirmBtn');
-  confirmBtn.onclick = function() {
+  confirmBtn.onclick = async function() {
     modal.hide();
+
+    // 记录登出日志
+    await logUserAction('logout', '管理员登出系统', 'info');
+
     window.api.logout && window.api.logout();
     window.location.href = 'login.html';
   };
@@ -547,45 +786,84 @@ let onlineUsersData = [];
 
 let onlineTrendData = [];
 
+// 商业级在线用户数据加载
 async function loadOnlineUsers() {
+  console.log('🔄 正在从后端API加载在线用户数据...');
+
   try {
-    console.log('🔄 正在从API加载在线用户数据...');
+    const response = await window.api.getOnlineUsers();
 
-    const response = await window.apiService.getOnlineUsers();
+    // 验证响应数据格式
+    if (!response || !response.data) {
+      throw new Error('服务器返回数据格式错误');
+    }
+
     onlineUsersData = response.data.onlineUsers || [];
-
     console.log(`✅ 获取到 ${onlineUsersData.length} 个在线用户数据`);
-    renderOnlineUserList();
 
-    // 同时加载趋势数据
-    await loadOnlineUsersTrend();
+    renderOnlineUserList();
+    return onlineUsersData;
+
   } catch (error) {
     console.error('❌ 加载在线用户失败:', error);
-    showNetworkError('在线用户数据');
+
+    // 根据错误类型显示专业的错误信息
+    let errorMessage = '网络连接失败';
+    if (error.type === 'NETWORK_ERROR') {
+      errorMessage = error.message;
+    } else if (error.message && !error.message.includes('is not a function')) {
+      errorMessage = error.message;
+    }
+
+    showNetworkErrorInOnlinePanel(errorMessage);
+
+    // 重新抛出错误，让调用者知道操作失败
+    throw error;
   }
 }
 
+// 商业级趋势数据加载（可选数据，失败不影响主要功能）
 async function loadOnlineUsersTrend() {
   try {
     console.log('🔄 正在从API加载在线用户趋势数据...');
 
     const today = new Date().toISOString().split('T')[0];
-    const response = await window.apiService.getOnlineUsersTrend({
+    const response = await window.api.getOnlineUsersTrend({
       date: today,
       interval: 'hour' // 按小时统计
     });
 
-    onlineTrendData = response.data.trendData || [];
+    // 验证响应数据格式
+    if (!response || !response.data) {
+      throw new Error('趋势数据格式错误');
+    }
 
+    onlineTrendData = response.data.trendData || [];
     console.log(`✅ 获取到在线用户趋势数据:`, onlineTrendData);
 
     // 重新渲染图表（如果在线用户数据已加载）
     if (onlineUsersData.length > 0) {
       renderOnlineCharts(onlineUsersData);
     }
+
+    return onlineTrendData;
+
   } catch (error) {
     console.error('❌ 加载在线用户趋势失败:', error);
-    // 趋势数据加载失败时，仍然可以显示用户列表和饼图
+
+    // 趋势数据是可选的，失败时显示占位符但不阻止主要功能
+    const onlineTrendChart = document.getElementById('onlineTrendChart');
+    if (onlineTrendChart) {
+      onlineTrendChart.innerHTML = `
+        <div class="text-center text-muted p-3">
+          <i class="fa fa-exclamation-triangle"></i>
+          <p>趋势数据暂时不可用</p>
+        </div>
+      `;
+    }
+
+    // 对于趋势数据，我们不重新抛出错误，因为这不是关键功能
+    return [];
   }
 }
 let onlineFilterRole = '';
@@ -799,8 +1077,40 @@ function initOnlinePanelUI() {
   // 刷新
   const refreshBtn = document.getElementById('onlineRefreshBtn');
   if (refreshBtn) {
-    refreshBtn.onclick = function() {
-      renderOnlineUserList();
+    refreshBtn.onclick = async function() {
+      // 显示加载状态
+      this.disabled = true;
+      this.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 刷新中...';
+
+      try {
+        // 重新从后端获取在线用户数据（关键数据）
+        await loadOnlineUsers();
+
+        // 重新获取趋势数据（可选数据，失败不影响成功提示）
+        try {
+          await loadOnlineUsersTrend();
+        } catch (trendError) {
+          console.warn('趋势数据加载失败，但主要数据加载成功:', trendError);
+        }
+
+        showToast('在线用户数据刷新成功', 'success');
+      } catch (error) {
+        console.error('刷新在线用户数据失败:', error);
+
+        // 根据错误类型显示专业的错误信息
+        let errorMessage = '网络连接失败';
+        if (error.type === 'NETWORK_ERROR') {
+          errorMessage = error.message;
+        } else if (error.message && !error.message.includes('is not a function')) {
+          errorMessage = error.message;
+        }
+
+        showToast(errorMessage, 'error');
+      } finally {
+        // 恢复按钮状态
+        this.disabled = false;
+        this.innerHTML = '<i class="fa fa-refresh"></i> 刷新';
+      }
     };
   }
 
@@ -850,18 +1160,141 @@ window.addEventListener('DOMContentLoaded', function() {
 });
 
 window.onload = function() {
-  loadUsers();
-  loadLocalLogs(); // 首次进入读取本地日志
+  // 确保API就绪
+  try {
+    ensureApiReady();
+    console.log('✅ API检查通过，开始加载页面数据');
+  } catch (error) {
+    console.error('❌ API初始化失败:', error);
+    alert('系统初始化失败，请刷新页面重试');
+    return;
+  }
+
+  // 绑定事件监听器
+  bindEventListeners();
+
+  // 商业级数据加载 - 独立处理每个数据源
+  initializePageData();
   showPanel('users');
 };
 
-// ================== 网络错误处理 ==================
-function showNetworkError(dataType) {
+// 商业级页面数据初始化
+async function initializePageData() {
+  // 并行加载不相关的数据源
+  const loadPromises = [
+    loadUsersWithErrorHandling(),
+    loadLocalLogsWithErrorHandling()
+  ];
+
+  // 等待所有数据加载完成（失败的不影响其他数据）
+  await Promise.allSettled(loadPromises);
+}
+
+// 带错误处理的用户数据加载
+async function loadUsersWithErrorHandling() {
+  try {
+    await loadUsers();
+  } catch (error) {
+    console.error('初始用户数据加载失败:', error);
+    // 错误已经在loadUsers中处理，这里不需要额外操作
+  }
+}
+
+// 带错误处理的日志数据加载
+async function loadLocalLogsWithErrorHandling() {
+  try {
+    await loadLocalLogs();
+  } catch (error) {
+    console.error('初始日志数据加载失败:', error);
+    // 日志加载失败不影响其他功能
+  }
+}
+
+// 绑定所有事件监听器
+function bindEventListeners() {
+  // 导航相关
+  const menuUsers = document.getElementById('menu-users');
+  if (menuUsers) {
+    menuUsers.onclick = (e) => { e.preventDefault(); showPanel('users'); };
+  }
+
+  const menuOnline = document.getElementById('menu-online');
+  if (menuOnline) {
+    menuOnline.onclick = (e) => { e.preventDefault(); showPanel('online'); };
+  }
+
+  const menuLogs = document.getElementById('menu-logs');
+  if (menuLogs) {
+    menuLogs.onclick = (e) => { e.preventDefault(); showPanel('logs'); };
+  }
+
+  // 登出按钮
+  const logoutBtn = document.getElementById('logoutBtn');
+  if (logoutBtn) {
+    logoutBtn.onclick = logout;
+  }
+
+  // 添加用户相关
+  const openAddUserBtn = document.getElementById('openAddUserBtn');
+  if (openAddUserBtn) {
+    openAddUserBtn.onclick = openAddUserModal;
+  }
+
+  const closeAddUserModalBtn = document.getElementById('closeAddUserModalBtn');
+  if (closeAddUserModalBtn) {
+    closeAddUserModalBtn.onclick = closeAddUserModal;
+  }
+
+  const cancelAddUserBtn = document.getElementById('cancelAddUserBtn');
+  if (cancelAddUserBtn) {
+    cancelAddUserBtn.onclick = closeAddUserModal;
+  }
+
+  // 编辑用户相关
+  const closeEditUserModalBtn = document.getElementById('closeEditUserModalBtn');
+  if (closeEditUserModalBtn) {
+    closeEditUserModalBtn.onclick = closeEditUserModal;
+  }
+
+  const cancelEditUserBtn = document.getElementById('cancelEditUserBtn');
+  if (cancelEditUserBtn) {
+    cancelEditUserBtn.onclick = closeEditUserModal;
+  }
+
+  // 日志相关
+  const refreshLogsBtn = document.getElementById('refreshLogsBtn');
+  if (refreshLogsBtn) {
+    refreshLogsBtn.onclick = refreshLogsFromBackend;
+  }
+
+  const exportLogsBtn = document.getElementById('exportLogsBtn');
+  if (exportLogsBtn) {
+    exportLogsBtn.onclick = exportLogsToLocal;
+  }
+
+  const deleteLogsBtn = document.getElementById('deleteLogsBtn');
+  if (deleteLogsBtn) {
+    deleteLogsBtn.onclick = () => {
+      const modal = new bootstrap.Modal(document.getElementById('deleteLogsModal'));
+      modal.show();
+    };
+  }
+
+  const confirmDeleteLogsBtn = document.getElementById('confirmDeleteLogsBtn');
+  if (confirmDeleteLogsBtn) {
+    confirmDeleteLogsBtn.onclick = deleteLocalLogs;
+  }
+}
+
+// ================== 商业级网络错误处理 ==================
+function showNetworkError(dataType, customMessage = null) {
+  const errorMessage = customMessage || `无法加载${dataType}，请检查网络连接或刷新页面重试。`;
+
   const errorHtml = `
     <div class="alert alert-danger text-center">
       <i class="fa fa-exclamation-triangle"></i>
-      <strong>网络错误</strong><br>
-      无法加载${dataType}，请检查网络连接或刷新页面重试。
+      <strong>网络连接失败</strong><br>
+      ${errorMessage}
       <br><br>
       <button class="btn btn-sm btn-primary" onclick="location.reload()">
         <i class="fa fa-refresh"></i> 刷新页面
@@ -871,11 +1304,41 @@ function showNetworkError(dataType) {
 
   // 根据数据类型显示错误信息
   if (dataType === '用户数据') {
-    document.getElementById('userList').innerHTML = errorHtml;
+    const userList = document.getElementById('userList');
+    if (userList) userList.innerHTML = errorHtml;
   } else if (dataType === '在线用户数据') {
-    document.getElementById('onlineList').innerHTML = errorHtml;
+    const onlineList = document.getElementById('onlineList');
+    if (onlineList) onlineList.innerHTML = errorHtml;
   } else if (dataType === '系统日志') {
-    document.getElementById('logList').innerHTML = errorHtml;
+    const logList = document.getElementById('logList');
+    if (logList) logList.innerHTML = errorHtml;
+  }
+}
+
+// 在线用户面板显示网络错误
+function showNetworkErrorInOnlinePanel(message) {
+  const onlineUserList = document.getElementById('onlineUserList');
+  if (onlineUserList) {
+    onlineUserList.innerHTML = `
+      <div class="network-error">
+        <i class="fa fa-exclamation-triangle"></i>
+        <p>${message}</p>
+        <button onclick="loadOnlineUsers()" class="btn btn-primary btn-sm">
+          <i class="fa fa-refresh"></i> 重试
+        </button>
+      </div>
+    `;
+  }
+
+  // 也在趋势图区域显示错误
+  const onlineTrendChart = document.getElementById('onlineTrendChart');
+  if (onlineTrendChart) {
+    onlineTrendChart.innerHTML = `
+      <div class="network-error">
+        <i class="fa fa-exclamation-triangle"></i>
+        <p>无法加载趋势数据</p>
+      </div>
+    `;
   }
 }
 
@@ -905,11 +1368,19 @@ async function loadLocalLogs() {
 
 // 从后端刷新日志
 async function refreshLogsFromBackend() {
+  // 获取刷新按钮并设置加载状态
+  const refreshBtn = document.getElementById('refreshLogsBtn');
+
+  if (refreshBtn) {
+    refreshBtn.disabled = true;
+    refreshBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 刷新中...';
+  }
+
   try {
     console.log('🔄 正在从后端获取新日志...');
 
     // 从后端API获取日志
-    const response = await window.apiService.getSystemLogs();
+    const response = await window.api.getSystemLogs();
     const backendLogs = response.data.logs || [];
 
     console.log(`✅ 从后端获取到 ${backendLogs.length} 条日志`);
@@ -923,7 +1394,10 @@ async function refreshLogsFromBackend() {
           console.log(`💾 ${result.message}`);
           // 重新读取本地日志
           await loadLocalLogs();
-          alert(`成功从后端获取并保存了新日志，当前总计 ${result.totalLogs} 条日志`);
+          showToast(`成功从后端获取并保存了新日志，当前总计 ${result.totalLogs} 条日志`, 'success');
+
+          // 记录刷新日志操作
+          await logUserAction('refresh_logs', `从后端刷新日志，获取 ${backendLogs.length} 条新日志`, 'info');
         } else {
           throw new Error(result.message);
         }
@@ -931,50 +1405,55 @@ async function refreshLogsFromBackend() {
         // 如果不是Electron环境，直接显示后端日志
         localLogs = backendLogs;
         renderLocalLogs();
-        alert(`从后端获取到 ${backendLogs.length} 条日志`);
+        showToast(`从后端获取到 ${backendLogs.length} 条日志`, 'success');
       }
     } else {
-      alert('后端没有新的日志数据');
+      showToast('后端没有新的日志数据', 'info');
     }
   } catch (error) {
     console.error('❌ 从后端刷新日志失败:', error);
-    alert('从后端获取日志失败，请检查网络连接');
+
+    // 根据错误类型显示专业的错误信息
+    let errorMessage = '网络连接失败';
+    if (error.type === 'NETWORK_ERROR') {
+      errorMessage = error.message;
+    } else if (error.message && !error.message.includes('is not a function')) {
+      errorMessage = error.message;
+    }
+
+    showToast(errorMessage, 'error');
+  } finally {
+    // 恢复按钮状态
+    if (refreshBtn) {
+      refreshBtn.disabled = false;
+      refreshBtn.innerHTML = '<i class="fa fa-refresh"></i> 刷新';
+    }
   }
 }
 
-// 导出日志到本地
+// 导出本地日志文件
 async function exportLogsToLocal() {
   try {
-    console.log('📥 正在导出日志到本地...');
+    console.log('📥 正在导出本地日志文件...');
 
     if (localLogs.length === 0) {
-      alert('没有日志数据可以导出');
+      showToast('没有本地日志数据可以导出', 'warning');
       return;
     }
 
-    // 从后端获取最新的完整日志数据
-    const response = await window.apiService.getSystemLogs();
-    const allLogs = response.data.logs || [];
-
-    if (allLogs.length === 0) {
-      alert('后端没有日志数据可以导出');
-      return;
-    }
-
-    // 保存到本地
+    // 直接导出本地logs.json文件内容
     if (typeof window.api !== 'undefined' && window.api.saveLogsToLocal) {
-      const result = await window.api.saveLogsToLocal(allLogs);
+      // Electron环境：保存到本地文件系统
+      const result = await window.api.saveLogsToLocal(localLogs);
 
       if (result.success) {
-        // 重新读取本地日志
-        await loadLocalLogs();
-        alert(`成功导出 ${allLogs.length} 条日志到本地logs.json文件`);
+        showToast(`成功导出 ${localLogs.length} 条本地日志到logs.json文件`, 'success');
       } else {
         throw new Error(result.message);
       }
     } else {
-      // 在Web环境中，创建下载链接
-      const dataStr = JSON.stringify(allLogs, null, 2);
+      // Web环境：创建下载链接
+      const dataStr = JSON.stringify(localLogs, null, 2);
       const dataBlob = new Blob([dataStr], { type: 'application/json' });
       const url = URL.createObjectURL(dataBlob);
       const link = document.createElement('a');
@@ -984,21 +1463,17 @@ async function exportLogsToLocal() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      alert(`成功下载 ${allLogs.length} 条日志到logs.json文件`);
+      showToast(`成功下载 ${localLogs.length} 条本地日志到logs.json文件`, 'success');
     }
   } catch (error) {
-    console.error('❌ 导出日志失败:', error);
-    alert('导出日志失败，请稍后重试');
+    console.error('❌ 导出本地日志失败:', error);
+    showToast('导出本地日志文件失败', 'error');
   }
 }
 
-// 删除本地日志文件
-function deleteLocalLogs() {
-  const modal = new bootstrap.Modal(document.getElementById('deleteLogsModal'));
-  modal.show();
-}
+// 删除本地日志文件（通过事件监听器调用）
 
-async function confirmDeleteLocalLogs() {
+async function deleteLocalLogs() {
   try {
     console.log('🗑️ 正在删除本地日志文件...');
 
@@ -1015,16 +1490,19 @@ async function confirmDeleteLocalLogs() {
         modal.hide();
 
         console.log('✅ 本地日志文件删除成功');
-        alert('本地日志文件已删除');
+        showToast('本地日志文件已删除', 'success');
+
+        // 记录删除日志操作
+        await logUserAction('delete_logs_file', '删除本地日志文件', 'warning');
       } else {
         throw new Error(result.message || '删除失败');
       }
     } else {
-      alert('此功能仅在Electron环境中可用');
+      showToast('此功能仅在Electron环境中可用', 'warning');
     }
   } catch (error) {
     console.error('❌ 删除本地日志文件失败:', error);
-    alert('删除失败，请稍后重试');
+    showToast(error.message || '删除失败，请稍后重试', 'error');
   }
 }
 
@@ -1078,4 +1556,66 @@ function renderLocalLogs() {
     const logItem = createLogItem(log);
     list.appendChild(logItem);
   });
+}
+
+// ================== 日志发送到后端功能 ==================
+
+// 发送日志到后端
+async function sendLogToBackend(logData) {
+  try {
+    // 构造标准日志格式
+    const logEntry = {
+      time: new Date().toISOString(),
+      user: logData.user || 'Unknown',
+      action: logData.action,
+      level: logData.level || 'info',
+      detail: logData.detail || '',
+      role: logData.role || null,
+      error: logData.error || null,
+      stack: logData.stack || null
+    };
+
+    console.log('📤 发送日志到后端:', logEntry);
+
+    // 调用后端API
+    await window.api.addLog(logEntry);
+    console.log('✅ 日志已发送到后端');
+  } catch (error) {
+    console.warn('⚠️ 发送日志到后端失败:', error);
+    // 不抛出错误，避免影响主要功能
+  }
+}
+
+// 记录用户操作日志（同时发送到后端）
+async function logUserAction(action, detail, level = 'info', user = null) {
+  const currentUser = await getCurrentUserSafely();
+  const logData = {
+    user: user || currentUser?.username || 'Unknown',
+    action: action,
+    level: level,
+    detail: detail,
+    role: currentUser?.role || null
+  };
+
+  // 发送到后端
+  await sendLogToBackend(logData);
+
+  // 同时添加到本地日志（如果是Electron环境）
+  if (window.api && window.api.addLog) {
+    try {
+      await window.api.addLog(logData);
+    } catch (error) {
+      console.warn('⚠️ 添加本地日志失败:', error);
+    }
+  }
+}
+
+// 安全获取当前用户信息
+async function getCurrentUserSafely() {
+  try {
+    return await window.api.getCurrentUser();
+  } catch (error) {
+    console.warn('⚠️ 获取当前用户失败:', error);
+    return null;
+  }
 }

@@ -120,28 +120,28 @@ function generateMockMonitorData() {
 
 let monitorData = generateMockMonitorData();
 
-// 加载监控数据
+// 商业级监控数据加载
 async function loadMonitorData() {
   try {
-    console.log('🔄 正在从API加载监控数据...');
+    console.log('🔄 正在从后端API加载监控数据...');
 
-    // 从API获取监控仪表板数据
-    const dashboardResponse = await window.apiService.getMonitorDashboard();
+    // 使用统一的API接口获取监控仪表板数据
+    const dashboardResponse = await window.api.getMonitorDashboard();
     monitorData = dashboardResponse.data;
 
     // 获取用户监控列表
-    const userListResponse = await window.apiService.getUserMonitorList({
+    const userListResponse = await window.api.getUserMonitorList({
       page: 1,
       limit: 50
     });
     monitorData.users = userListResponse.data.users;
 
     // 获取疲劳统计数据
-    const fatigueStatsResponse = await window.apiService.getFatigueStats();
+    const fatigueStatsResponse = await window.api.getFatigueStats();
     monitorData.fatigueStats = fatigueStatsResponse.data;
 
     // 获取疲劳趋势数据
-    const fatigueTrendResponse = await window.apiService.getFatigueTrend({
+    const fatigueTrendResponse = await window.api.getFatigueTrend({
       period: 'week'
     });
     monitorData.fatigueTrend = fatigueTrendResponse.data.trendData;
@@ -153,8 +153,17 @@ async function loadMonitorData() {
     renderDashboard();
     renderUserMonitorList();
   } catch (error) {
-    console.error('❌ API加载失败:', error);
-    showMonitorNetworkError();
+    console.error('❌ 监控数据加载失败:', error);
+
+    // 根据错误类型显示专业的错误信息
+    let errorMessage = '网络连接失败，请检查后端服务是否启动';
+    if (error.type === 'NETWORK_ERROR') {
+      errorMessage = error.message;
+    } else if (error.message && !error.message.includes('is not a function')) {
+      errorMessage = error.message;
+    }
+
+    showMonitorNetworkError(errorMessage);
   }
 }
 
@@ -617,8 +626,16 @@ function logoutMonitor() {
   // 解绑旧的，防止多次绑定导致卡死
   const confirmBtn = document.getElementById('logoutConfirmBtn');
   confirmBtn.onclick = null;
-  confirmBtn.onclick = function() {
+  confirmBtn.onclick = async function() {
     modal.hide();
+
+    // 记录监控人员登出日志
+    await sendLogToBackend({
+      action: 'logout',
+      detail: '监控人员登出系统',
+      level: 'info'
+    });
+
     window.location.href = 'login.html';
   };
   // 取消按钮采用data-bs-dismiss="modal"，Bootstrap会自动关闭弹窗，无需手动绑定
@@ -640,6 +657,17 @@ window.onload = async function() {
   // 注销按钮事件绑定
   let logoutBtn = document.getElementById('monitor-logout-btn');
   if (logoutBtn) logoutBtn.onclick = logoutMonitor;
+
+  // 标签页事件绑定
+  const tabDashboard = document.getElementById('tab-dashboard');
+  if (tabDashboard) {
+    tabDashboard.onclick = (e) => { e.preventDefault(); showMonitorTab('dashboard'); };
+  }
+
+  const tabUserMonitor = document.getElementById('tab-user-monitor');
+  if (tabUserMonitor) {
+    tabUserMonitor.onclick = (e) => { e.preventDefault(); showMonitorTab('user-monitor'); };
+  }
   // 用户监控Tab事件绑定
   const searchInput = document.getElementById('userMonitorSearch');
   if(searchInput){
@@ -1042,13 +1070,49 @@ async function generateExcelAllReport(reportData) {
   XLSX.writeFile(workbook, fileName);
 }
 
-// ================== 网络错误处理 ==================
-function showMonitorNetworkError() {
+// ================== 日志发送到后端功能 ==================
+
+// 发送日志到后端
+async function sendLogToBackend(logData) {
+  try {
+    // 获取当前用户信息
+    let currentUser = null;
+    try {
+      currentUser = await window.api.getCurrentUser();
+    } catch (error) {
+      console.warn('⚠️ 获取当前用户失败:', error);
+    }
+
+    // 构造标准日志格式
+    const logEntry = {
+      time: new Date().toISOString(),
+      user: logData.user || currentUser?.username || 'Unknown',
+      action: logData.action,
+      level: logData.level || 'info',
+      detail: logData.detail || '',
+      role: logData.role || currentUser?.role || null,
+      error: logData.error || null,
+      stack: logData.stack || null
+    };
+
+    console.log('📤 发送日志到后端:', logEntry);
+    await window.api.addLog(logEntry);
+    console.log('✅ 日志已发送到后端');
+  } catch (error) {
+    console.warn('⚠️ 发送日志到后端失败:', error);
+    // 不抛出错误，避免影响主要功能
+  }
+}
+
+// ================== 商业级网络错误处理 ==================
+function showMonitorNetworkError(customMessage = null) {
+  const errorMessage = customMessage || '无法从后端加载监控数据，请检查网络连接或刷新页面重试。';
+
   const errorHtml = `
     <div class="alert alert-danger text-center">
       <i class="fa fa-exclamation-triangle"></i>
-      <strong>网络错误</strong><br>
-      无法从后端加载监控数据，请检查网络连接或刷新页面重试。
+      <strong>网络连接失败</strong><br>
+      ${errorMessage}
       <br><br>
       <button class="btn btn-sm btn-primary" onclick="location.reload()">
         <i class="fa fa-refresh"></i> 刷新页面

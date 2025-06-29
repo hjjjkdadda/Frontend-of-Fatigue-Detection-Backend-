@@ -61,6 +61,29 @@
   transition: all 0.3s ease;
 }
 
+/* 禁用/启用按钮特殊样式 */
+.user-item .actions .action-btn-toggle.btn-warning {
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+  border-color: #ff9800;
+  color: white;
+}
+
+.user-item .actions .action-btn-toggle.btn-warning:hover {
+  background: linear-gradient(135deg, #f57c00 0%, #e65100 100%);
+  border-color: #f57c00;
+}
+
+.user-item .actions .action-btn-toggle.btn-success {
+  background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+  border-color: #4caf50;
+  color: white;
+}
+
+.user-item .actions .action-btn-toggle.btn-success:hover {
+  background: linear-gradient(135deg, #388e3c 0%, #2e7d32 100%);
+  border-color: #388e3c;
+}
+
 .user-item .actions .btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
@@ -559,10 +582,25 @@ body { background: #f7f9fa; }
   border-radius: 4px;
   font-weight: 500;
   transition: all 0.2s ease;
+  color: white !important;
 }
 
 .log-download-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0,123,255,0.3);
+  color: white !important;
+}
+
+/* 展开详情按钮样式 */
+.btn-outline-secondary {
+  background: #6c757d;
+  border: 1px solid #6c757d;
+  color: white !important;
+}
+
+.btn-outline-secondary:hover {
+  background: #5a6268;
+  border-color: #545b62;
+  color: white !important;
 }
 

@@ -19,20 +19,42 @@ class ApiService {
 
     try {
       const response = await fetch(url, config);
-      
+
       if (!response.ok) {
-        if (response.status === 401) {
-          // Token过期，清除本地存储并跳转到登录页
-          this.clearAuth();
-          window.location.href = 'login.html';
-          throw new Error('认证失败，请重新登录');
+        // 处理不同的HTTP状态码
+        switch (response.status) {
+          case 401:
+            // Token过期，清除本地存储并跳转到登录页
+            this.clearAuth();
+            window.location.href = 'login.html';
+            throw new Error('认证失败，请重新登录');
+          case 403:
+            throw new Error('权限不足，无法访问此资源');
+          case 404:
+            throw new Error('请求的资源不存在');
+          case 409:
+            throw new Error('数据冲突，可能是重复操作');
+          case 422:
+            throw new Error('请求数据格式错误');
+          case 500:
+            throw new Error('服务器内部错误，请稍后重试');
+          case 502:
+          case 503:
+          case 504:
+            throw new Error('服务器暂时不可用，请稍后重试');
+          default:
+            throw new Error(`请求失败 (${response.status}): ${response.statusText}`);
         }
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
       return data;
     } catch (error) {
+      // 网络错误处理
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error('网络连接失败，请检查后端服务是否启动');
+      }
+
       console.error('API请求失败:', error);
       throw error;
     }
@@ -141,6 +163,11 @@ class ApiService {
     return this.delete(`/users/${username}`);
   }
 
+  // 禁用/启用用户
+  async toggleUserStatus(username, status) {
+    return this.put(`/users/${username}/status`, { status });
+  }
+
   // ==================== 在线用户API ====================
   
   // 获取在线用户列表
@@ -164,10 +191,42 @@ class ApiService {
   }
 
   // ==================== 监控数据API ====================
-  
+
   // 获取监控仪表板数据
   async getMonitorDashboard() {
     return this.get('/monitor/dashboard');
+  }
+
+  // 获取用户监控列表
+  async getUserMonitorList(params = {}) {
+    return this.get('/monitor/users', params);
+  }
+
+  // 获取疲劳统计数据
+  async getFatigueStats(params = {}) {
+    return this.get('/monitor/fatigue/stats', params);
+  }
+
+  // 获取疲劳趋势数据
+  async getFatigueTrend(params = {}) {
+    return this.get('/monitor/fatigue/trend', params);
+  }
+
+  // ==================== 用户详情API ====================
+
+  // 获取用户详情
+  async getUserDetail(username) {
+    return this.get(`/users/${username}/detail`);
+  }
+
+  // 获取用户疲劳事件历史
+  async getUserFatigueEvents(username, params = {}) {
+    return this.get(`/users/${username}/fatigue-events`, params);
+  }
+
+  // 获取用户健康数据
+  async getUserHealthData(username) {
+    return this.get(`/users/${username}/health-data`);
   }
 
   // 获取用户监控列表
@@ -525,40 +584,405 @@ class ApiService {
   }
 }
 
-// 创建全局API实例
-window.apiService = new ApiService();
+// ==================== 商业级API初始化系统 ====================
 
-// 兼容原有的window.api接口
+// API状态管理
+const API_STATUS = {
+  INITIALIZING: 'initializing',
+  READY: 'ready',
+  ERROR: 'error',
+  NETWORK_ERROR: 'network_error'
+};
+
+let apiStatus = API_STATUS.INITIALIZING;
+let apiError = null;
+
+// 商业级标准化错误消息
+const ERROR_MESSAGES = {
+  NETWORK_ERROR: '网络连接失败，请检查后端服务是否启动',
+  INITIALIZATION_ERROR: '系统初始化失败，请刷新页面重试',
+  SERVICE_UNAVAILABLE: '服务暂时不可用，请稍后重试',
+  UNKNOWN_ERROR: '发生未知错误，请联系技术支持',
+  API_METHOD_NOT_FOUND: '后端接口不可用，请检查服务器状态',
+  AUTHENTICATION_ERROR: '身份验证失败，请重新登录',
+  PERMISSION_ERROR: '权限不足，无法执行此操作',
+  DATA_FORMAT_ERROR: '数据格式错误，请检查输入内容',
+  SERVER_ERROR: '服务器内部错误，请稍后重试'
+};
+
+// 创建标准化的API错误
+function createApiError(type, originalError = null) {
+  const error = new Error(ERROR_MESSAGES[type] || ERROR_MESSAGES.UNKNOWN_ERROR);
+  error.type = type;
+  error.originalError = originalError;
+  return error;
+}
+
+// 安全的API服务初始化
+function initializeApiService() {
+  try {
+    if (typeof window === 'undefined') {
+      throw createApiError('INITIALIZATION_ERROR', new Error('非浏览器环境'));
+    }
+
+    window.apiService = new ApiService();
+
+    // 验证关键方法存在
+    const requiredMethods = ['addUser', 'getUsers', 'updateUser', 'deleteUser', 'toggleUserStatus'];
+    for (const method of requiredMethods) {
+      if (typeof window.apiService[method] !== 'function') {
+        throw createApiError('INITIALIZATION_ERROR', new Error(`缺少方法: ${method}`));
+      }
+    }
+
+    apiStatus = API_STATUS.READY;
+    console.log('✅ API服务初始化成功');
+    return true;
+
+  } catch (error) {
+    apiStatus = API_STATUS.ERROR;
+    apiError = error;
+    console.error('❌ API服务初始化失败:', error);
+
+    // 创建故障安全的API服务
+    window.apiService = createFallbackApiService();
+    return false;
+  }
+}
+
+// 创建商业级故障安全的API服务
+function createFallbackApiService() {
+  console.warn('⚠️ 创建故障安全API服务，所有请求将返回网络错误');
+
+  const networkError = createApiError('NETWORK_ERROR');
+
+  // 创建统一的错误处理函数
+  const createErrorHandler = (methodName) => {
+    return () => {
+      console.error(`❌ API调用失败: ${methodName}，后端服务不可用`);
+      return Promise.reject(networkError);
+    };
+  };
+
+  return {
+    // 用户管理
+    addUser: createErrorHandler('addUser'),
+    getUsers: createErrorHandler('getUsers'),
+    updateUser: createErrorHandler('updateUser'),
+    deleteUser: createErrorHandler('deleteUser'),
+    toggleUserStatus: createErrorHandler('toggleUserStatus'),
+
+    // 监控数据
+    getOnlineUsers: createErrorHandler('getOnlineUsers'),
+    getOnlineUsersTrend: createErrorHandler('getOnlineUsersTrend'),
+    getSystemLogs: createErrorHandler('getSystemLogs'),
+    getMonitorDashboard: createErrorHandler('getMonitorDashboard'),
+    getUserMonitorList: createErrorHandler('getUserMonitorList'),
+    getFatigueStats: createErrorHandler('getFatigueStats'),
+    getFatigueTrend: createErrorHandler('getFatigueTrend'),
+
+    // 认证
+    login: createErrorHandler('login'),
+    logout: createErrorHandler('logout'),
+    getCurrentUser: createErrorHandler('getCurrentUser'),
+
+    // 日志
+    getLogs: createErrorHandler('getLogs'),
+    addLog: createErrorHandler('addLog')
+  };
+}
+
+// 执行初始化
+initializeApiService();
+
+// 统一使用HTTP API与后端通信
+
+// 检测是否在Electron环境中
+const isElectron = typeof window !== 'undefined' &&
+                  typeof window.process !== 'undefined' &&
+                  window.process.type === 'renderer';
+
+// 保存原有的Electron API（仅保留登录和日志功能）
+let electronApi = null;
+if (isElectron && typeof window.api !== 'undefined') {
+  electronApi = {
+    // 登录相关（临时保留用于调试）
+    login: window.api.login,
+    logout: window.api.logout,
+    getCurrentUser: window.api.getCurrentUser,
+    // 日志相关
+    getLocalLogs: window.api.getLocalLogs,
+    addLog: window.api.addLog,
+    saveLogsToLocal: window.api.saveLogsToLocal,
+    deleteLocalLogsFile: window.api.deleteLocalLogsFile,
+    // 导航
+    navigate: window.api.navigate
+  };
+  console.log('⚡ Electron环境：保留登录和日志功能');
+}
+
+// ==================== 商业级统一API接口 ====================
+
+// API健康检查
+function checkApiHealth() {
+  return {
+    status: apiStatus,
+    error: apiError,
+    serviceAvailable: !!window.apiService,
+    timestamp: new Date().toISOString()
+  };
+}
+
+// 商业级API调用包装器
+function safeApiCall(apiMethod, ...args) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      // 检查API服务状态
+      if (apiStatus === API_STATUS.ERROR) {
+        console.error(`❌ API服务不可用，方法: ${apiMethod}`);
+        reject(createApiError('NETWORK_ERROR'));
+        return;
+      }
+
+      // 检查API服务是否存在
+      if (!window.apiService) {
+        console.error(`❌ API服务未初始化，方法: ${apiMethod}`);
+        reject(createApiError('NETWORK_ERROR'));
+        return;
+      }
+
+      // 检查方法是否存在
+      if (typeof window.apiService[apiMethod] !== 'function') {
+        console.error(`❌ API方法不存在: ${apiMethod}`);
+        reject(createApiError('NETWORK_ERROR'));
+        return;
+      }
+
+      console.log(`🔄 执行API调用: ${apiMethod}`, args.length > 0 ? args : '');
+
+      // 执行API调用
+      const result = await window.apiService[apiMethod](...args);
+
+      console.log(`✅ API调用成功: ${apiMethod}`);
+      resolve(result);
+
+    } catch (error) {
+      console.error(`❌ API调用失败: ${apiMethod}`, error);
+
+      // 标准化错误处理
+      if (error.name === 'TypeError') {
+        if (error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
+          reject(createApiError('NETWORK_ERROR', error));
+        } else if (error.message.includes('is not a function')) {
+          reject(createApiError('NETWORK_ERROR', error));
+        } else {
+          reject(createApiError('UNKNOWN_ERROR', error));
+        }
+      } else if (error.message && error.message.includes('Failed to fetch')) {
+        reject(createApiError('NETWORK_ERROR', error));
+      } else if (error.message && error.message.includes('NetworkError')) {
+        reject(createApiError('NETWORK_ERROR', error));
+      } else {
+        // 保持原始错误信息（可能包含有用的业务逻辑错误）
+        reject(error);
+      }
+    }
+  });
+}
+
+// 创建统一的API接口
+console.log('🔧 创建商业级API接口...');
+
 window.api = {
-  // 认证相关
-  login: (username, password) => window.apiService.login(username, password),
-  logout: () => window.apiService.logout(),
-  getCurrentUser: () => window.apiService.getCurrentUser(),
-  
-  // 用户管理
-  getUsers: () => window.apiService.getUsers(),
-  addUser: (user) => window.apiService.addUser(user),
-  updateUser: (username, user) => window.apiService.updateUser(username, user),
-  deleteUser: (username) => window.apiService.deleteUser(username),
-  
-  // 日志（保持原有兼容性）
+  // ==================== 认证相关 ====================
+  login: (data) => {
+    // 在Electron环境中使用本地验证，Web环境中使用HTTP API
+    if (electronApi && electronApi.login) {
+      return electronApi.login(data);
+    }
+    return safeApiCall('login', data.username, data.password);
+  },
+
+  logout: () => {
+    if (electronApi && electronApi.logout) {
+      return electronApi.logout();
+    }
+    return safeApiCall('logout');
+  },
+
+  getCurrentUser: () => {
+    if (electronApi && electronApi.getCurrentUser) {
+      return electronApi.getCurrentUser();
+    }
+    return safeApiCall('getCurrentUser');
+  },
+
+  // ==================== 用户管理 ====================
+  // 统一使用HTTP API，确保数据来源一致
+  getUsers: (params = {}) => {
+    return safeApiCall('getUsers', params);
+  },
+
+  addUser: (user) => {
+    return safeApiCall('addUser', user);
+  },
+
+  updateUser: (user) => {
+    return safeApiCall('updateUser', user.username, user);
+  },
+
+  deleteUser: (username) => {
+    return safeApiCall('deleteUser', username);
+  },
+
+  toggleUserStatus: (username, status) => {
+    return safeApiCall('toggleUserStatus', username, status);
+  },
+
+  // ==================== 监控数据 ====================
+  getOnlineUsers: () => {
+    return safeApiCall('getOnlineUsers');
+  },
+
+  getOnlineUsersTrend: (params = {}) => {
+    return safeApiCall('getOnlineUsersTrend', params);
+  },
+
+  getSystemLogs: () => {
+    return safeApiCall('getSystemLogs');
+  },
+
+  getMonitorDashboard: () => {
+    return safeApiCall('getMonitorDashboard');
+  },
+
+  getUserMonitorList: (params = {}) => {
+    return safeApiCall('getUserMonitorList', params);
+  },
+
+  getFatigueStats: (params = {}) => {
+    return safeApiCall('getFatigueStats', params);
+  },
+
+  getFatigueTrend: (params = {}) => {
+    return safeApiCall('getFatigueTrend', params);
+  },
+
+  // ==================== 用户详情 ====================
+  getUserDetail: (username) => {
+    return safeApiCall('getUserDetail', username);
+  },
+
+  getUserFatigueEvents: (username, params = {}) => {
+    return safeApiCall('getUserFatigueEvents', username, params);
+  },
+
+  getUserHealthData: (username) => {
+    return safeApiCall('getUserHealthData', username);
+  },
+
+  // ==================== 日志管理 ====================
   getLogs: () => {
-    // 在Electron环境中直接使用window.api
-    if (typeof window.api !== 'undefined' && window.api.getLocalLogs) {
-      return window.api.getLocalLogs();
+    // 优先使用本地日志（Electron环境）
+    if (electronApi && electronApi.getLocalLogs) {
+      return electronApi.getLocalLogs();
     }
-    // 在Web环境中使用HTTP API
-    return window.apiService.getLogs();
+    return safeApiCall('getLogs');
   },
+
   addLog: (log) => {
-    if (typeof window.api !== 'undefined' && window.api.addLog) {
-      return window.api.addLog(log);
+    if (electronApi && electronApi.addLog) {
+      return electronApi.addLog(log);
     }
-    return window.apiService.addLog(log);
+    return safeApiCall('addLog', log);
   },
-  
-  // 导航（保持原有逻辑）
+
+  saveLogsToLocal: (logs) => {
+    if (electronApi && electronApi.saveLogsToLocal) {
+      return electronApi.saveLogsToLocal(logs);
+    }
+    return Promise.reject(createApiError('SERVICE_UNAVAILABLE', new Error('本地日志保存功能仅在Electron环境中可用')));
+  },
+
+  deleteLocalLogsFile: () => {
+    if (electronApi && electronApi.deleteLocalLogsFile) {
+      return electronApi.deleteLocalLogsFile();
+    }
+    return Promise.reject(createApiError('SERVICE_UNAVAILABLE', new Error('本地日志删除功能仅在Electron环境中可用')));
+  },
+
+  // ==================== 导航 ====================
   navigate: (page) => {
+    if (electronApi && electronApi.navigate) {
+      return electronApi.navigate(page);
+    }
     window.location.href = page;
   }
-};
+  };
+
+  // 立即验证API接口是否正确创建
+  if (!window.api) {
+    throw new Error('window.api 创建失败');
+  }
+
+  if (typeof window.api.addUser !== 'function') {
+    throw new Error('window.api.addUser 方法创建失败');
+  }
+
+  if (typeof window.api.getUsers !== 'function') {
+    throw new Error('window.api.getUsers 方法创建失败');
+  }
+
+// API健康检查方法
+window.api.getApiHealth = checkApiHealth;
+
+console.log('✅ 商业级API接口创建成功，包含方法:', Object.keys(window.api).length);
+
+// 确保API接口正确初始化
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', function() {
+    // 验证关键API方法是否存在
+    if (!window.api || typeof window.api.addUser !== 'function' || typeof window.api.getUsers !== 'function') {
+      console.warn('API接口异常，尝试修复...');
+
+      // 强制重新创建API接口
+      if (window.apiService) {
+        window.api = {
+          // 认证相关
+          login: (data) => window.apiService.login(data.username, data.password),
+          logout: () => window.apiService.logout(),
+          getCurrentUser: () => window.apiService.getCurrentUser(),
+
+          // 用户管理
+          getUsers: (params = {}) => window.apiService.getUsers(params),
+          addUser: (user) => window.apiService.addUser(user),
+          updateUser: (user) => window.apiService.updateUser(user.username, user),
+          deleteUser: (username) => window.apiService.deleteUser(username),
+          toggleUserStatus: (username, status) => window.apiService.toggleUserStatus(username, status),
+
+          // 监控数据
+          getOnlineUsers: () => window.apiService.getOnlineUsers(),
+          getOnlineUsersTrend: (params = {}) => window.apiService.getOnlineUsersTrend(params),
+          getSystemLogs: () => window.apiService.getSystemLogs(),
+          getMonitorDashboard: () => window.apiService.getMonitorDashboard(),
+          getUserMonitorList: (params = {}) => window.apiService.getUserMonitorList(params),
+          getFatigueStats: (params = {}) => window.apiService.getFatigueStats(params),
+          getFatigueTrend: (params = {}) => window.apiService.getFatigueTrend(params),
+
+          // 用户详情
+          getUserDetail: (username) => window.apiService.getUserDetail(username),
+          getUserFatigueEvents: (username, params = {}) => window.apiService.getUserFatigueEvents(username, params),
+          getUserHealthData: (username) => window.apiService.getUserHealthData(username),
+
+          // 日志
+          getLogs: () => window.apiService.getLogs(),
+          addLog: (log) => window.apiService.addLog(log),
+
+          // 导航
+          navigate: (page) => { window.location.href = page; }
+        };
+        console.log('✅ API接口修复完成');
+      }
+    }
+  });
+}

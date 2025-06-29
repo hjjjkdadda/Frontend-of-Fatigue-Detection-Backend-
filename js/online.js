@@ -6,15 +6,21 @@
   let searchName = '';
   let sortType = 'username';
 
-  // 加载在线用户数据
+  // 商业级在线用户数据加载
   async function loadOnlineUsers() {
     try {
-      console.log('🔄 正在从API加载在线用户数据...');
+      console.log('🔄 正在从后端API加载在线用户数据...');
 
-      const response = await window.apiService.getOnlineUsers({
+      // 使用统一的API接口
+      const response = await window.api.getOnlineUsers({
         page: 1,
         limit: 100
       });
+
+      // 验证响应数据格式
+      if (!response || !response.data) {
+        throw new Error('服务器返回数据格式错误');
+      }
 
       allUsers = response.data.onlineUsers || [];
       console.log('✅ 在线用户数据加载成功:', allUsers);
@@ -22,22 +28,30 @@
       // 更新显示
       renderUserList();
       updateStats();
+
+      return { success: true, data: allUsers };
+
     } catch (error) {
-      console.warn('⚠️ API加载失败，使用模拟数据:', error);
+      console.error('❌ 加载在线用户失败:', error);
 
-      // API失败时使用模拟数据
-      allUsers = [
-        {username:'driver1',role:'驾驶员',phone:'13800000001',status:'在线'},
-        {username:'driver2',role:'驾驶员',phone:'13800000002',status:'在线'},
-        {username:'monitor1',role:'监控人员',phone:'13800000003',status:'在线'},
-        {username:'admin',role:'管理员',phone:'13800000004',status:'在线'},
-        {username:'driver3',role:'驾驶员',phone:'13800000005',status:'在线'},
-        {username:'monitor2',role:'监控人员',phone:'13800000006',status:'在线'}
-      ];
+      // 根据错误类型显示专业的错误信息
+      let errorMessage = '网络连接失败，请检查后端服务是否启动';
+      if (error.type === 'NETWORK_ERROR') {
+        errorMessage = error.message;
+      } else if (error.message && !error.message.includes('is not a function')) {
+        errorMessage = error.message;
+      }
 
-      console.log('使用模拟数据:', allUsers);
+      // 显示网络错误，不使用模拟数据
+      showNetworkErrorInOnlinePanel(errorMessage);
+
+      // 清空用户列表
+      allUsers = [];
       renderUserList();
       updateStats();
+
+      // 重新抛出错误，让调用者知道操作失败
+      throw error;
     }
   }
 
@@ -159,13 +173,64 @@
     // 刷新
     const refreshBtn = document.getElementById('onlineRefreshBtn');
     if (refreshBtn) {
-      refreshBtn.onclick = function() {
-        loadOnlineUsers(); // 重新从API加载数据
+      refreshBtn.onclick = async function() {
+        // 显示加载状态
+        this.disabled = true;
+        this.innerHTML = '<i class="fa fa-spinner fa-spin"></i> 刷新中...';
+
+        try {
+          await loadOnlineUsers();
+          showToast('在线用户数据刷新成功', 'success');
+        } catch (error) {
+          console.error('刷新在线用户数据失败:', error);
+
+          // 根据错误类型显示专业的错误信息
+          let errorMessage = '网络连接失败，请检查后端服务是否启动';
+          if (error.type === 'NETWORK_ERROR') {
+            errorMessage = error.message;
+          } else if (error.message && !error.message.includes('is not a function')) {
+            errorMessage = error.message;
+          }
+
+          showToast(errorMessage, 'error');
+        } finally {
+          // 恢复按钮状态
+          this.disabled = false;
+          this.innerHTML = '<i class="fa fa-refresh"></i> 刷新';
+        }
       };
     }
     // 初始加载数据
     loadOnlineUsers();
   };
+
+  // 在线用户面板显示网络错误
+  function showNetworkErrorInOnlinePanel(message) {
+    const onlineUserList = document.getElementById('onlineUserList');
+    if (onlineUserList) {
+      onlineUserList.innerHTML = `
+        <div class="network-error" style="text-align: center; padding: 40px 20px; color: #666;">
+          <i class="fa fa-exclamation-triangle" style="font-size: 48px; color: #f39c12; margin-bottom: 15px;"></i>
+          <h4 style="color: #e74c3c; margin-bottom: 10px;">网络连接失败</h4>
+          <p style="margin-bottom: 20px;">${message}</p>
+          <button onclick="loadOnlineUsers()" class="btn btn-primary btn-sm">
+            <i class="fa fa-refresh"></i> 重试连接
+          </button>
+        </div>
+      `;
+    }
+
+    // 也在趋势图区域显示错误
+    const onlineTrendChart = document.getElementById('onlineTrendChart');
+    if (onlineTrendChart) {
+      onlineTrendChart.innerHTML = `
+        <div class="network-error" style="text-align: center; padding: 20px; color: #666;">
+          <i class="fa fa-exclamation-triangle" style="color: #f39c12; margin-right: 8px;"></i>
+          <span>无法加载趋势数据</span>
+        </div>
+      `;
+    }
+  }
 
   // 面板切换时自动加载
   window.onloadOnlinePanel = function() {

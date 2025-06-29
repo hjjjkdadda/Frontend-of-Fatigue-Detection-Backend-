@@ -1,18 +1,13 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
-const crypto = require('crypto');
 const fs = require('fs');
 
 let mainWindow;
-let currentUser = null;
-let token = null;
 const LOG_PATH = path.join(__dirname, 'logs.json');
 
-function createToken(user) {
-  return crypto.randomBytes(16).toString('hex');
-}
+function createWindow(page = 'login.html') 
+{
 
-function createWindow(page = 'login.html') {
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -179,124 +174,54 @@ ipcMain.handle('deleteLocalLogsFile', () => {
   }
 });
 
-// 用户管理（管理员权限）
-let users = [
-  { username: 'admin', role: 'admin' },
-  { username: 'driver1', role: 'driver' },
-  { username: 'monitor1', role: 'monitor' }
-];
-ipcMain.handle('getUsers', () => users);
-ipcMain.handle('addUser', (event, user) => {
-  users.push(user);
-  logs.push({
-    time: new Date(),
-    user: currentUser?.username,
-    action: 'addUser',
-    role: currentUser?.role,
-    level: 'info',
-    detail: user
-  });
-  saveLogs();
-});
-ipcMain.handle('deleteUser', (event, username) => {
-  users = users.filter(u => u.username !== username);
-  logs.push({
-    time: new Date(),
-    user: currentUser?.username,
-    action: 'deleteUser',
-    role: currentUser?.role,
-    level: 'warning',
-    detail: username
-  });
-  saveLogs();
-});
-ipcMain.handle('updateUser', (event, user) => {
-  users = users.map(u => u.username === user.username ? user : u);
-  logs.push({
-    time: new Date(),
-    user: currentUser?.username,
-    action: 'updateUser',
-    role: currentUser?.role,
-    level: 'info',
-    detail: user
-  });
-  saveLogs();
-});
+// 用户管理相关代码已删除 - 所有用户数据现在从后端获取
 
-// 用户会话管理
-let userSessions = new Map(); // 存储用户会话信息
+// 临时保留登录功能用于调试 - 用户管理仍使用后端API
+let currentUser = null;
+let token = null;
 
-// 登录处理
+// 登录处理（临时保留用于调试）
 ipcMain.handle('login', (event, { username, password, role }) => {
   try {
-    // 这里应接入后端校验，演示用静态数据
+    // 简单的本地验证用于调试
     if (username && password && ['admin', 'monitor'].includes(role)) {
-      // 如果用户已经有会话，先记录退出
-      if (currentUser && currentUser.username !== username) {
-        logs.push({
-          time: new Date(),
-          user: currentUser.username,
-          action: 'logout',
-          role: currentUser.role
-        });
-        addSystemLog('warning', 'session_override', `用户 ${username} 登录时覆盖了 ${currentUser.username} 的会话`);
-      }
-
-      // 创建新的用户会话
-      const sessionInfo = {
-        username,
-        role,
-        loginTime: new Date(),
-        token: createToken({ username, role })
-      };
-
       currentUser = { username, role };
-      token = sessionInfo.token;
+      token = 'debug-token-' + Date.now();
 
-      // 存储会话信息
-      userSessions.set(username, sessionInfo);
-
-      // 记录用户登录日志
+      // 记录登录日志
       logs.push({
         time: new Date(),
         user: username,
         action: 'login',
         role: role,
-        level: 'success'
+        level: 'info'
       });
       saveLogs();
 
-      console.log(`✅ 用户 ${username} 以 ${role} 角色登录成功`);
-      return { success: true, role, token: sessionInfo.token };
+      console.log(`✅ 用户 ${username} (${role}) 登录成功 [调试模式]`);
+      return { success: true, role, token };
     } else {
-      // 登录失败
-      addSystemLog('warning', 'login_failed', `登录失败: 用户 ${username}, 角色 ${role}`, new Error('Invalid credentials or role'));
-      return { success: false };
+      console.log(`❌ 登录失败: ${username} (${role}) [调试模式]`);
+      return { success: false, message: '用户名、密码或角色错误' };
     }
   } catch (error) {
-    addSystemLog('error', 'login_error', `登录过程发生错误: ${username}`, error);
-    return { success: false };
+    console.error('登录处理失败:', error);
+    return { success: false, message: '登录异常，请稍后重试' };
   }
 });
 
+// 登出处理（临时保留用于调试）
 ipcMain.handle('logout', () => {
-  // 记录用户退出日志
   if (currentUser) {
-    const sessionInfo = userSessions.get(currentUser.username);
-
     logs.push({
       time: new Date(),
       user: currentUser.username,
       action: 'logout',
       role: currentUser.role,
-      level: 'info',
-      sessionDuration: sessionInfo ? Math.round((new Date() - sessionInfo.loginTime) / 1000) : 0
+      level: 'info'
     });
     saveLogs();
-
-    // 清除会话信息
-    userSessions.delete(currentUser.username);
-    console.log(`✅ 用户 ${currentUser.username} (${currentUser.role}) 退出登录`);
+    console.log(`✅ 用户 ${currentUser.username} (${currentUser.role}) 退出登录 [调试模式]`);
   }
 
   currentUser = null;
@@ -304,32 +229,12 @@ ipcMain.handle('logout', () => {
   if (mainWindow) mainWindow.loadFile('login.html');
 });
 
-// 路由拦截
+// 获取当前用户（临时保留用于调试）
+ipcMain.handle('getCurrentUser', () => currentUser);
+
+// logout相关代码已删除 - 登出现在通过后端API处理
+
+// 简单的页面导航（不做权限检查，权限检查由前端和后端处理）
 ipcMain.handle('navigate', (event, page) => {
-  // 允许未登录访问的页面
-  const publicPages = ['login.html', 'register.html'];
-  // 需要登录才能访问的页面
-  const authPages = {
-    'admin.html': 'admin',
-    'driver.html': 'driver',
-    'monitor.html': 'monitor',
-    'log.html': 'admin'
-  };
-  if (publicPages.includes(page)) {
-    mainWindow.loadFile(page);
-    return;
-  }
-  if (!currentUser || !token) {
-    if (mainWindow) mainWindow.loadFile('login.html');
-    return;
-  }
-  if (authPages[page] && currentUser.role !== authPages[page]) {
-    if (mainWindow) mainWindow.loadFile('login.html');
-    return;
-  }
   mainWindow.loadFile(page);
 });
-
-// 获取当前用户
-ipcMain.handle('getCurrentUser', () => currentUser);
-ipcMain.handle('getToken', () => token);

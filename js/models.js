@@ -325,7 +325,16 @@ class UserDetailManager {
 
 // 创建全局数据管理实例
 window.dataStore = new DataStore();
-window.userDataManager = new UserDataManager(window.apiService, window.dataStore);
-window.onlineUserManager = new OnlineUserManager(window.apiService, window.dataStore);
-window.monitorDataManager = new MonitorDataManager(window.apiService, window.dataStore);
-window.userDetailManager = new UserDetailManager(window.apiService, window.dataStore);
+
+// 延迟初始化数据管理器，确保API服务已准备就绪
+document.addEventListener('DOMContentLoaded', () => {
+  if (window.api) {
+    window.userDataManager = new UserDataManager(window.api, window.dataStore);
+    window.onlineUserManager = new OnlineUserManager(window.api, window.dataStore);
+    window.monitorDataManager = new MonitorDataManager(window.api, window.dataStore);
+    window.userDetailManager = new UserDetailManager(window.api, window.dataStore);
+    console.log('✅ 数据管理器初始化完成');
+  } else {
+    console.warn('⚠️ API服务未就绪，数据管理器初始化延迟');
+  }
+});

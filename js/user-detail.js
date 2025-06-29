@@ -38,12 +38,12 @@ class UserDetailPage {
   // 从API加载用户详情
   async loadUserDetail() {
     try {
-      // 尝试从API获取用户详情
-      const userDetailResponse = await window.apiService.getUserDetail(this.username);
+      // 尝试从统一API获取用户详情
+      const userDetailResponse = await window.api.getUserDetail(this.username);
       this.user = userDetailResponse.data.user;
 
       // 获取用户疲劳事件历史
-      const eventsResponse = await window.apiService.getUserFatigueEvents(this.username, {
+      const eventsResponse = await window.api.getUserFatigueEvents(this.username, {
         limit: 50,
         startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString() // 最近30天
       });
@@ -51,7 +51,7 @@ class UserDetailPage {
 
       // 获取用户健康数据
       try {
-        const healthResponse = await window.apiService.getUserHealthData(this.username);
+        const healthResponse = await window.api.getUserHealthData(this.username);
         this.user.healthData = healthResponse.data.healthData;
       } catch (error) {
         console.warn('获取健康数据失败，使用默认数据:', error);
@@ -410,7 +410,7 @@ class UserDetailPage {
 
     this.charts.trend = window.echarts.init(chartDom);
     
-    const trendData = this.user.events.map((e, i) => ({
+    const trendData = this.user.events.map((_, i) => ({
       date: `6-${20 + i}`,
       count: Math.floor(Math.random() * 3 + 1)
     }));
@@ -668,53 +668,12 @@ class UserDetailPage {
     this.showToast(message, 'error');
   }
 
-  // 显示Toast消息
+  // 使用全局Toast组件
   showToast(message, type = 'info') {
-    // 创建toast元素
-    const toast = document.createElement('div');
-    toast.className = `toast-message toast-${type}`;
-    toast.innerHTML = `
-      <i class="fa fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
-      ${message}
-    `;
-
-    // 添加样式
-    Object.assign(toast.style, {
-      position: 'fixed',
-      top: '20px',
-      right: '20px',
-      padding: '12px 20px',
-      borderRadius: '8px',
-      color: 'white',
-      fontSize: '14px',
-      fontWeight: '500',
-      zIndex: '9999',
-      minWidth: '300px',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-      transform: 'translateX(100%)',
-      transition: 'transform 0.3s ease',
-      backgroundColor: type === 'success' ? '#43a047' : type === 'error' ? '#f44336' : '#2196f3'
-    });
-
-    document.body.appendChild(toast);
-
-    // 显示动画
-    setTimeout(() => {
-      toast.style.transform = 'translateX(0)';
-    }, 100);
-
-    // 自动隐藏
-    setTimeout(() => {
-      toast.style.transform = 'translateX(100%)';
-      setTimeout(() => {
-        if (toast.parentNode) {
-          toast.parentNode.removeChild(toast);
-        }
-      }, 300);
-    }, 3000);
+    return window.showToast(message, type);
   }
 
-  // 显示错误信息
+  // 显示错误信息（页面级错误）
   showError(message) {
     document.body.innerHTML = `
       <div class="user-detail-content">
